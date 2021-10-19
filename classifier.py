@@ -20,7 +20,7 @@ def entropy(data):
 noise = np.random.normal(0, 1, 1000)
 
 # Signal
-sampleRate, signal = wave.read('./test_data/miaow_16k.wav')
+sampleRate, signal = wave.read('./recordings/miaow_16k.wav')
 
 
 # Spectrogram 

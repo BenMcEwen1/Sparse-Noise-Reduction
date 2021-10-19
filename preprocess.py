@@ -7,7 +7,7 @@ import numpy as np
 
 class Process:
 
-  def __init__(self, directory, level=5, wavelet='sym5', threshold=12):
+  def __init__(self, directory, level=5, wavelet='dmey', threshold=12): 
     sampleRate, signal = wave.read(directory)
     self.sampleRate = sampleRate
     self.signal = signal
@@ -16,16 +16,18 @@ class Process:
     self.threshold = threshold
 
   def entropy(self, data):
-    # Measure randomness of data packets
-    E = data**2/len(data)
-    P = E/sum(E)
-    S = -sum(P*np.log2(P))
+    # Measure complexity of data packets
+    data = data[np.nonzero(data)]
+    S = sum(data * np.log2(data))
     return S
 
-  def noiseReduction(self):
+  def denoise(self, plot=False):
     # WPD with removal of noisy packets
     coeffs = pywt.wavedec(self.signal, self.wavelet, level=self.level)
-    
+
+    if plot:
+      self.decomposition()
+
     for i,coeff in enumerate(coeffs):
       en = self.entropy(coeff)
       print(en)
@@ -39,11 +41,33 @@ class Process:
     signal = pywt.waverec(coeffs, self.wavelet)
     return signal
 
+  def decomposition(self):
+    # Plot decomposition packets
+    fig, axarr = plt.subplots(nrows=self.level, ncols=2, figsize=(6,6))
+
+    data = self.signal
+
+    for ii in range(self.level):
+        (data, coeff_d) = pywt.dwt(data, self.wavelet)
+        axarr[ii, 0].plot(data, 'r')
+        axarr[ii, 1].plot(coeff_d, 'g')
+        axarr[ii, 0].set_ylabel("Level {}".format(ii + 1), fontsize=14, rotation=90)
+        axarr[ii, 0].set_yticklabels([])
+
+        if ii == 0:
+            axarr[ii, 0].set_title("Approximation coefficients", fontsize=14)
+            axarr[ii, 1].set_title("Detail coefficients", fontsize=14)
+        axarr[ii, 1].set_yticklabels([])
+    plt.tight_layout()
+    plt.show()
+
   def spectrogram(self, signal, plot=False):
     # Return spectrogram of data packet
     spectrum, frequencies, time, axis = plt.specgram(signal, Fs=self.sampleRate)
 
     if plot == True:
+      plt.xlabel('Time (s)')
+      plt.ylabel('Frequency (Hz)')
       plt.show()
 
     return spectrum, frequencies, time, axis
@@ -53,5 +77,16 @@ recording = Process('./recordings/miaow_16k.wav')
 s = recording.signal
 spectrum, frequencies, time, axis = recording.spectrogram(s, True)
 
-plt.pcolormesh(time, frequencies, spectrum)
-plt.show()
+coeffs = recording.denoise(True)
+s2 = recording.reconstruct(coeffs)
+recording.spectrogram(s2, True)
+
+# mag = []
+# for c in spectrum.T:
+#   mag.append(sum(c)/len(c))
+
+# print(mag)
+
+# b = np.arange(len(mag))
+# plt.plot(b,mag)
+# plt.show()
