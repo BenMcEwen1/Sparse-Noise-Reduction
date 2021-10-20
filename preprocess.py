@@ -9,11 +9,14 @@ class Process:
 
   def __init__(self, directory, level=5, wavelet='dmey', threshold=12): 
     sampleRate, signal = wave.read(directory)
+    signal = signal[0:100000] # Temporary so that they are the same length when compared
     self.sampleRate = sampleRate
     self.signal = signal
     self.level = level
     self.wavelet = wavelet
     self.threshold = threshold
+    self.length = len(signal)
+    print(self.length)
 
   def entropy(self, data):
     # Measure complexity of data packets
@@ -31,7 +34,7 @@ class Process:
     for i,coeff in enumerate(coeffs):
       en = self.entropy(coeff)
       print(en)
-      if en > self.threshold:
+      if en > self.threshold: 
           coeffs[i] = np.zeros_like(coeffs[i])
 
     return coeffs
@@ -73,9 +76,14 @@ class Process:
     return spectrum, frequencies, time, axis
 
 
-recording = Process('./recordings/miaow_16k.wav')
+recording = Process('./recordings/possum.wav')
 s = recording.signal
 spectrum, frequencies, time, axis = recording.spectrogram(s, True)
+
+spectrum = np.array(spectrum)
+print(spectrum.shape)
+
+np.save('./reference/possum.npy', spectrum)
 
 coeffs = recording.denoise(True)
 s2 = recording.reconstruct(coeffs)
@@ -85,8 +93,5 @@ recording.spectrogram(s2, True)
 # for c in spectrum.T:
 #   mag.append(sum(c)/len(c))
 
-# print(mag)
-
-# b = np.arange(len(mag))
-# plt.plot(b,mag)
+# plt.plot(mag)
 # plt.show()

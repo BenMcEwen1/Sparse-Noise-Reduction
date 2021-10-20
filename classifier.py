@@ -63,9 +63,9 @@ print(sm.ratio())
 
 # Remove coeffs (Use Shannon Entropy)
 for i,coeff in enumerate(coeffs):
-    en = entropy(coeff)
-    print(en)
-    if en > 12:
+    #en = entropy(coeff)
+    #print(en)
+    if i == 5:
         coeffs[i] = np.zeros_like(coeffs[i])
 
 print(coeffs)
@@ -73,35 +73,11 @@ print(coeffs)
 # Reconstruct signal
 reconstructed_signal = pywt.waverec(coeffs, 'sym5')
 
-plt.figure(2)
-plt.plot(signal)
-plt.plot(reconstructed_signal)
-plt.show()
-
-
-
-# # If spectral range exceeds thresgold, recommend
-# frequency, time, spectrogram = signal.spectrogram(data, sampleRate)
-
-# # print(frequency)
-# print(spectrogram)
-
-# t = []
-
-# for instance in spectrogram:
-#     flag = 0
-#     for sample in instance:
-#         if sample > 60:
-#             flag = 1
-#             break
-#         else:
-#             flag = 0
-
-#     t.append(flag)
-       
-# print(t)
-
-# plt.specgram(data,Fs=sampleRate)
-# plt.xlabel('Time [sec]')
-# plt.ylabel('Frequency [Hz]')
+# plt.figure(2)
+# plt.plot(signal)
+# plt.plot(reconstructed_signal)
 # plt.show()
+
+import librosa
+audio_signal = librosa.core.spectrum.griffinlim(reconstructed_signal)
+print(audio_signal, audio_signal.shape)
