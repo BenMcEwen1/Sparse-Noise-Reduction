@@ -9,7 +9,7 @@ import random
 
 class Process:
 
-  def __init__(self, directory, level=5, wavelet='dmey', threshold=12): 
+  def __init__(self, directory, level=5, wavelet='dmey', threshold=0.9): 
     sampleRate, signal = wave.read(directory)
     signal = signal[0:100000] # Temporary so that they are the same length when compared
     self.sampleRate = sampleRate
@@ -18,17 +18,18 @@ class Process:
     self.wavelet = wavelet
     self.threshold = threshold
     self.length = len(signal)
-    en = self.entropy(signal)
+    self.max_entropy = self.entropy(signal)
     var = self.variance(signal)
-    print(f"Signal entropy: {en}")
+    print(f"Signal entropy: {self.max_entropy}")
     print(f"Signal variance: {var}")
+
 
   def entropy(self, data):
     # Measure complexity of data packets
     #data = data[0:3000] # Test to ensure packet length is the same
     norm = np.linalg.norm(data)
-    e = data[np.nonzero(data)]**2 * np.log(data[np.nonzero(data)]**2)
-    return np.sum(e)
+    e = data[np.nonzero(data)]**2 * np.log2(data[np.nonzero(data)]**2)
+    return -np.sum(e)
 
   def variance(self, data):
     # Measure the variance of data packets
@@ -38,19 +39,9 @@ class Process:
 
   def KS(self, data):
     # Kolmogororov-Smirnov test of uniformity
-    u = kstest(data, uniform(loc=0.0, scale=len(data)).cdf)
-    return u
-
-  def randomness(self, N=500):
-    # Random signal for reference
-    rand = np.random.uniform(-1,1,size=N)
-    uni = self.KS(rand)
-
-    print(f'Uniformity of randomness: {uni}')
-
-    plt.figure(1)
-    plt.plot(rand)
-    plt.show()
+    random.seed(10)
+    Uniformity = kstest(data, uniform(loc=0.0, scale=len(data)).cdf)
+    return Uniformity.statistic
 
   def denoise(self, plot=False):
     # WPD with removal of noisy packets
@@ -62,15 +53,17 @@ class Process:
     for i,coeff in enumerate(coeffs):
       en = self.entropy(coeff)
       var = self.variance(coeff)
-      uni = self.KS(coeff)
+      uniformity = self.KS(coeff)
 
-      print('---')
+      print(f'Level {i}')
       print(f'Entropy: {en}')
       print(f'Variance: {var}')
-      print(f'Uniformity: {uni}')
+      print(f'Uniformity: {uniformity}')
 
-      if en > self.threshold: 
-          coeffs[i] = np.zeros_like(coeffs[i])
+      # if uniformity > self.threshold: 
+      #     coeffs[i] = np.zeros_like(coeffs[i])
+
+      coeffs[i] = pywt.threshold(coeff, 0.2*max(coeff), 'less')
 
     return coeffs
 
@@ -114,13 +107,12 @@ class Process:
 recording = Process('./recordings/cat.wav')
 s = recording.signal
 
-recording.randomness()
 
 spectrum, frequencies, time, axis = recording.spectrogram(s, True)
 
 spectrum = np.array(spectrum)
 
-coeffs = recording.denoise(True)
+coeffs = recording.denoise(False)
 s2 = recording.reconstruct(coeffs)
 recording.spectrogram(s2, True)
 
