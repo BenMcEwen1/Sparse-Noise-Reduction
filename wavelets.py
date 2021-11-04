@@ -4,12 +4,12 @@ import pywt
 from scipy.signal import chirp
 import matplotlib.pyplot as plt
 
-
 # Chirp (Test signal)
 t = np.linspace(0, 10, 30000)
 signal = chirp(t, f0=0.1, f1=300, t1=10, method='linear')
 noise = np.random.rand(30000) * 0.1
 signal += noise
+
 
 # Generate Tree
 wp = pywt.WaveletPacket(signal, wavelet='dmey', mode='symmetric', maxlevel=3)
@@ -20,21 +20,23 @@ print(pywt.families())
 # Spectrogram of raw signal
 plt.figure(1)
 plt.specgram(signal, Fs=3000)
-plt.show()
 
 # Remove packets then reconstruct
-remove = ['d','da','dd','add ','dda','ddd','dad','daa']
+remove = ['d','da','dd','ada','dda','ddd','dad','daa']
 
-for level in range(1,wp.maxlevel+1):
+for level in range(1, wp.maxlevel+1):
     for node in wp.get_level(level, 'freq'):
         if (node.path in remove):
             print(f"{node.path} deleted")
-            # del wp[node.path]
-            wp[node.path].data = np.zeros(len(node.data))
+            del wp[node.path]
+            # wp[node.path].data = np.zeros(len(node.data))
             # wp[node.path].data = node.data * 0.5
 
             # Thresholding
-            #wp[node.path].data = pywt.threshold(node.data,np.mean(abs(node.data)),'soft')
+            # wp[node.path].data = pywt.threshold(node.data,np.mean(abs(node.data)),'soft')
+
+            # Noise Cancellation
+            wp[node.path].data = np.multiply(node.data, -1)
             wp.reconstruct(True)
         else:
             print(node.path)
@@ -45,14 +47,6 @@ plt.figure(2)
 plt.specgram(wp.data, Fs=3000)
 plt.show()
 
-# Approximate, detailed and reconstructed signal (Weird stretching)
-(A, D) = pywt.dwt(wp.data, 'dmey')
-d = pywt.idwt(A, None, 'dmey')
-plt.figure(3)
-plt.plot(A)
-plt.plot(D)
-plt.plot(d)
-plt.show()
 
 #------------------------------------------------------------
 
