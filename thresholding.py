@@ -24,55 +24,57 @@ def decomposition(signal, level):
     plt.tight_layout()
     plt.show()
 
+
 def partialTree(signal, plot=False):
     # Returns leaf coeffs of approximate branch
-    coeffs = pywt.wavedec(signal, wavelet='dmey',mode='symmetric', level=3)
+    coeffs = pywt.wavedec(signal, wavelet='dmey',mode='symmetric', level=4)
 
     if plot:
-        (cA3, cD3, cD2, cD1) = coeffs
-        fig, ax = plt.subplots(4)
-        ax[0].plot(cD1, label='cD1')
-        ax[1].plot(cD2, label='cD2')
-        ax[2].plot(cD3, label='cD3')
-        ax[3].plot(cA3, label='cA3')
+        fig, ax = plt.subplots(len(coeffs))
+        for i, coeff in enumerate(coeffs):
+            ax[i].plot(coeff)
         plt.show()
 
     return coeffs
 
-def fullTree(signal, wavelet='dmey', level=3):
+
+def fullTree(signal, wavelet='dmey', level=1, plot=False):
     # Return leaf coeffs of full tree
-    A = signal
-    D = None
+    coeffs = [signal]
 
-    coeffs = []
     for i in range(level):
-        if i == 0: # First node so only one packet 
-            (A,D) = pywt.dwt(signal, wavelet)
-            coeffs.append(A)
-            coeffs.append(A)
-        else:
-            L = []
-            for coeff in coeffs:
-                
-                (A,D) = pywt.dwt(coeff, wavelet)
-                L.append(A) 
-                L.append(D) 
-            
-            coeffs = L
+        temp = []
+        for coeff in coeffs:
+            (A,D) = pywt.dwt(coeff, wavelet)
+            temp.append(A) 
+            temp.append(D) 
+        
+        coeffs = temp
 
-    print((len(L)))
+    if plot:
+        fig, ax = plt.subplots(len(coeffs))
+        for i, coeff in enumerate(coeffs):
+            ax[i].plot(coeff)
+        plt.show()
 
-    # (cA3, cD3, cD2, cD1) = L
-    # fig, ax = plt.subplots(4)
-    # ax[0].plot(cD1, label='cD1')
-    # ax[1].plot(cD2, label='cD2')
-    # ax[2].plot(cD3, label='cD3')
-    # ax[3].plot(cA3, label='cA3')
-    # plt.show()
+    return coeffs
 
 
+def reconstructFull(coeffs, wavelet='dmey', plot=True):
+    upper = []
+    for i in range(1, len(coeffs), 2):
+        U = pywt.idwt(coeffs[i-1], coeffs[i], wavelet)
+        upper.append(U)
 
+    print(len(upper))
 
+    if plot:
+        fig, ax = plt.subplots(len(upper))
+        for i, coeff in enumerate(upper):
+            ax[i].plot(coeff)
+        plt.show()
+
+    return upper
 
 
 # Chirp (Test signal)
@@ -88,7 +90,10 @@ signal += noise
 # level = 6
 # print(sampleRate)
 
-fullTree(signal)
+coeffs = fullTree(signal, plot=True) # Full tree, difficulty reconstructing
+
+upper = reconstructFull(coeffs)
+print(len(upper))
 
 # # Calculate coefficients
 # #coeffs = partialTree(signal, plot=False)
