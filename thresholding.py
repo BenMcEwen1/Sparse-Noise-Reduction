@@ -38,7 +38,7 @@ def partialTree(signal, plot=False):
     return coeffs
 
 
-def fullTree(signal, wavelet='dmey', level=1, plot=False):
+def decomposeFull(signal, wavelet='dmey', level=3, plot=False):
     # Return leaf coeffs of full tree
     coeffs = [signal]
 
@@ -60,21 +60,25 @@ def fullTree(signal, wavelet='dmey', level=1, plot=False):
     return coeffs
 
 
-def reconstructFull(coeffs, wavelet='dmey', plot=True):
+def reconstructFull(coeffs, wavelet='dmey', plot=False):
+    # Reconstruct full wavelet tree
     upper = []
-    for i in range(1, len(coeffs), 2):
-        U = pywt.idwt(coeffs[i-1], coeffs[i], wavelet)
-        upper.append(U)
+    levels = int(np.log2(len(coeffs)))
 
-    print(len(upper))
+    for l in range(levels):
+        for i in range(1, len(coeffs), 2):
+            U = pywt.idwt(coeffs[i-1], coeffs[i], wavelet)
+            upper.append(U)
+        coeffs = upper
+        upper = []
 
     if plot:
-        fig, ax = plt.subplots(len(upper))
-        for i, coeff in enumerate(upper):
+        fig, ax = plt.subplots(len(coeffs))
+        for i, coeff in enumerate(coeffs):
             ax[i].plot(coeff)
         plt.show()
 
-    return upper
+    return coeffs[0]
 
 
 # Chirp (Test signal)
@@ -83,51 +87,54 @@ t = np.linspace(0, 10, sampleRate)
 signal = chirp(t, f0=0.1, f1=2, t1=10, method='linear')
 noise = np.random.standard_normal(sampleRate) * 0.1
 signal += noise
+level = 3
+form = signal.dtype
 
-# Noisy possum Test
+# # Noisy possum Test
 # sampleRate, signal = wave.read('recordings/PossumNoisy.wav')
 # form = signal.dtype
 # level = 6
 # print(sampleRate)
 
-coeffs = fullTree(signal, plot=True) # Full tree, difficulty reconstructing
 
-upper = reconstructFull(coeffs)
-print(len(upper))
+coeffs = decomposeFull(signal, plot=False) # Full tree decomposition
 
-# # Calculate coefficients
-# #coeffs = partialTree(signal, plot=False)
-
-# coeffs = pywt.wavedec(signal, wavelet='dmey',mode='symmetric', level=level)
-
-# #down_coeffs = pywt.downcoef(part='d', data=signal, wavelet='dmey', mode='symmetric', level=5) # Allows you to pick out individual packets, tree is the same as wavedec though
-
-# # Apply thresholding to detailed coeffs
-# for i,coeff in enumerate(coeffs):
-#     if i != 0: # First index is the Approximate node, careful!
-#         thres = 2*np.std(coeff)
-#         print(thres)
-#         coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
-#         # coeffs[i] = np.zeros(len(coeff))
+upper = reconstructFull(coeffs, plot=False) # Full tree reconstruction
 
 
-# denoised = pywt.waverec(coeffs, wavelet='dmey')
+# Calculate coefficients
+#coeffs = partialTree(signal, plot=False)
 
-# plt.figure()
-# plt.title('Original/Denoised signal')
-# plt.plot(signal)
-# plt.plot(denoised)
-# plt.show()
+coeffs = pywt.wavedec(signal, wavelet='dmey',mode='symmetric', level=level)
 
-# fig, (ax1, ax2, ax3) = plt.subplots(3)
-# fig.suptitle('Original/Denoised Spectrogram')
-# ax1.specgram(signal, Fs=sampleRate)
-# ax2.specgram(denoised, Fs=sampleRate)
-# denoised = np.asarray(denoised, dtype=form) # Downsample
-# ax3.specgram(denoised, Fs=sampleRate)
-# plt.show()
+#down_coeffs = pywt.downcoef(part='d', data=signal, wavelet='dmey', mode='symmetric', level=5) # Allows you to pick out individual packets, tree is the same as wavedec though
 
-# decomposition(signal, level)
+# Apply thresholding to detailed coeffs
+for i,coeff in enumerate(coeffs):
+    if i != 0: # First index is the Approximate node, careful!
+        thres = 2*np.std(coeff)
+        print(thres)
+        coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
+        # coeffs[i] = np.zeros(len(coeff))
 
-# # Save denoised signal
-# wave.write('denoised/denoised.wav', sampleRate, denoised)
+
+denoised = pywt.waverec(coeffs, wavelet='dmey')
+
+plt.figure()
+plt.title('Original/Denoised signal')
+plt.plot(signal)
+plt.plot(denoised)
+plt.show()
+
+fig, (ax1, ax2, ax3) = plt.subplots(3)
+fig.suptitle('Original/Denoised Spectrogram')
+ax1.specgram(signal, Fs=sampleRate)
+ax2.specgram(denoised, Fs=sampleRate)
+denoised = np.asarray(denoised, dtype=form) # Downsample
+ax3.specgram(denoised, Fs=sampleRate)
+plt.show()
+
+decomposition(signal, level)
+
+# Save denoised signal
+wave.write('denoised/denoised.wav', sampleRate, denoised)
