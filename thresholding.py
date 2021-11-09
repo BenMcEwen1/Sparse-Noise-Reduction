@@ -38,7 +38,7 @@ def partialTree(signal, plot=False):
     return coeffs
 
 
-def decomposeFull(signal, wavelet='dmey', level=3, plot=False):
+def decomposeFull(signal, wavelet='dmey', level=5, plot=False):
     # Return leaf coeffs of full tree
     coeffs = [signal]
 
@@ -81,44 +81,38 @@ def reconstructFull(coeffs, wavelet='dmey', plot=False):
     return coeffs[0]
 
 
-# Chirp (Test signal)
-sampleRate = 1000
-t = np.linspace(0, 10, sampleRate)
-signal = chirp(t, f0=0.1, f1=2, t1=10, method='linear')
-noise = np.random.standard_normal(sampleRate) * 0.1
-signal += noise
-level = 3
-form = signal.dtype
-
-# # Noisy possum Test
-# sampleRate, signal = wave.read('recordings/PossumNoisy.wav')
+# # Chirp (Test signal)
+# sampleRate = 1000
+# t = np.linspace(0, 10, sampleRate)
+# signal = chirp(t, f0=0.1, f1=2, t1=10, method='linear')
+# noise = np.random.standard_normal(sampleRate) * 0.1
+# signal += noise
+# level = 4
 # form = signal.dtype
-# level = 6
-# print(sampleRate)
 
+# Noisy possum Test
+sampleRate, signal = wave.read('recordings/cat.wav')
+form = signal.dtype
+level = 15
+print(sampleRate)
 
-coeffs = decomposeFull(signal, plot=False) # Full tree decomposition
-
-upper = reconstructFull(coeffs, plot=False) # Full tree reconstruction
 
 
 # Calculate coefficients
 #coeffs = partialTree(signal, plot=False)
-
-coeffs = pywt.wavedec(signal, wavelet='dmey',mode='symmetric', level=level)
+coeffs = decomposeFull(signal, plot=False) # Full tree decomposition
 
 #down_coeffs = pywt.downcoef(part='d', data=signal, wavelet='dmey', mode='symmetric', level=5) # Allows you to pick out individual packets, tree is the same as wavedec though
 
 # Apply thresholding to detailed coeffs
 for i,coeff in enumerate(coeffs):
     if i != 0: # First index is the Approximate node, careful!
-        thres = 2*np.std(coeff)
+        thres = 0.5*np.std(coeff)
         print(thres)
         coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
-        # coeffs[i] = np.zeros(len(coeff))
 
-
-denoised = pywt.waverec(coeffs, wavelet='dmey')
+denoised = reconstructFull(coeffs, plot=False) # Full tree reconstruction
+# denoised = pywt.waverec(coeffs, wavelet='dmey')
 
 plt.figure()
 plt.title('Original/Denoised signal')
@@ -126,15 +120,13 @@ plt.plot(signal)
 plt.plot(denoised)
 plt.show()
 
-fig, (ax1, ax2, ax3) = plt.subplots(3)
+fig, (ax1, ax2) = plt.subplots(2)
 fig.suptitle('Original/Denoised Spectrogram')
 ax1.specgram(signal, Fs=sampleRate)
-ax2.specgram(denoised, Fs=sampleRate)
 denoised = np.asarray(denoised, dtype=form) # Downsample
-ax3.specgram(denoised, Fs=sampleRate)
+ax2.specgram(denoised, Fs=sampleRate)
 plt.show()
 
-decomposition(signal, level)
 
 # Save denoised signal
 wave.write('denoised/denoised.wav', sampleRate, denoised)
