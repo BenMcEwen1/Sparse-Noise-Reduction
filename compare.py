@@ -18,9 +18,9 @@ plt.figure(1)
 plt.plot(cor)
 plt.show()
 
-# # 2-d correlation of spectrograms
-# sp, fp, tp, imp = plt.specgram(possum, sampleRate)
-# sr, fr, tr, imr = plt.specgram(ref, sampleRate)
+# 2-d correlation of spectrograms
+sp, fp, tp, imp = plt.specgram(possum, sampleRate)
+sr, fr, tr, imr = plt.specgram(ref, sampleRate)
 
 # # plt.pcolormesh(tp, fp, Sp)
 # # plt.ylabel('Frequency [Hz]')
@@ -28,7 +28,8 @@ plt.show()
 # # plt.show()
 
 # corr = signal.correlate2d(sp, sr, boundary='symm', mode='same')
+conv = signal.convolve2d(sp, sr)
 
-# plt.imshow(sp)
-# # plt.imshow(corr)
-# plt.show()
+plt.imshow(sp)
+plt.imshow(conv)
+plt.show()

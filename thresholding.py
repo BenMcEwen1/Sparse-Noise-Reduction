@@ -25,9 +25,9 @@ def decomposition(signal, level):
     plt.show()
 
 
-def partialTree(signal, plot=False):
+def partialTree(signal, levels=5, plot=False):
     # Returns leaf coeffs of approximate branch
-    coeffs = pywt.wavedec(signal, wavelet='dmey',mode='symmetric', level=4)
+    coeffs = pywt.wavedec(signal, wavelet='dmey',mode='symmetric', level=levels)
 
     if plot:
         fig, ax = plt.subplots(len(coeffs))
@@ -81,38 +81,59 @@ def reconstructFull(coeffs, wavelet='dmey', plot=False):
     return coeffs[0]
 
 
+def thresholdFull(signal, wavelet='dmey', level=5):
+    for l in range(1,level+1):
+        coeffs = decomposeFull(signal, wavelet=wavelet, level=l, plot=False)
+
+        # Apply thresholding to detailed coeffs
+        for i,coeff in enumerate(coeffs):
+            thres = 1*np.std(coeff)
+            print(thres)
+            coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
+
+        # Reconstruct each level
+        signal = reconstructFull(coeffs, wavelet=wavelet, plot=False) # Full tree reconstruction
+
+    return signal
+
+
+def threholdPartial(signal, wavelet='dmey', level=5):
+    coeffs = partialTree(signal, levels=level, plot=False)
+    for i,coeff in enumerate(coeffs):
+        if i != 0: # First index is the Approximate node, careful!
+            thres = 0.5*np.std(coeff)
+            print(thres)
+            coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
+
+    signal = pywt.waverec(coeffs, wavelet='dmey')
+
+    return signal
+
+
+
 # # Chirp (Test signal)
 # sampleRate = 1000
 # t = np.linspace(0, 10, sampleRate)
 # signal = chirp(t, f0=0.1, f1=2, t1=10, method='linear')
 # noise = np.random.standard_normal(sampleRate) * 0.1
 # signal += noise
-# level = 4
+# level = 3
 # form = signal.dtype
 
 # Noisy possum Test
 sampleRate, signal = wave.read('recordings/cat.wav')
 form = signal.dtype
-level = 15
-print(sampleRate)
 
+# signal = (signal - np.mean(signal)) / np.std(signal) # Normalisation
 
+print(pywt.wavelist(kind='discrete'))
 
-# Calculate coefficients
-#coeffs = partialTree(signal, plot=False)
-coeffs = decomposeFull(signal, plot=False) # Full tree decomposition
+wavelet = 'dmey'
+level = 8
 
-#down_coeffs = pywt.downcoef(part='d', data=signal, wavelet='dmey', mode='symmetric', level=5) # Allows you to pick out individual packets, tree is the same as wavedec though
+denoised = thresholdFull(signal, wavelet=wavelet, level=level)
 
-# Apply thresholding to detailed coeffs
-for i,coeff in enumerate(coeffs):
-    if i != 0: # First index is the Approximate node, careful!
-        thres = 0.5*np.std(coeff)
-        print(thres)
-        coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
-
-denoised = reconstructFull(coeffs, plot=False) # Full tree reconstruction
-# denoised = pywt.waverec(coeffs, wavelet='dmey')
+print(denoised)
 
 plt.figure()
 plt.title('Original/Denoised signal')
@@ -125,8 +146,8 @@ fig.suptitle('Original/Denoised Spectrogram')
 ax1.specgram(signal, Fs=sampleRate)
 denoised = np.asarray(denoised, dtype=form) # Downsample
 ax2.specgram(denoised, Fs=sampleRate)
-plt.show()
 
+plt.show()
 
 # Save denoised signal
 wave.write('denoised/denoised.wav', sampleRate, denoised)
