@@ -87,7 +87,7 @@ def thresholdFull(signal, wavelet='dmey', level=5):
 
         # Apply thresholding to detailed coeffs
         for i,coeff in enumerate(coeffs):
-            thres = 1*np.std(coeff)
+            thres = 2*np.std(coeff)
             print(thres)
             coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
 
@@ -97,12 +97,13 @@ def thresholdFull(signal, wavelet='dmey', level=5):
     return signal
 
 
-def threholdPartial(signal, wavelet='dmey', level=5):
+def thresholdPartial(signal, wavelet='dmey', level=5):
     coeffs = partialTree(signal, levels=level, plot=False)
     for i,coeff in enumerate(coeffs):
         if i != 0: # First index is the Approximate node, careful!
-            thres = 0.5*np.std(coeff)
+            thres = 1*np.std(coeff)
             print(thres)
+            thres = 555 * 4.5 # AviaNZ suggests the std of the lowest packet x4.5
             coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
 
     signal = pywt.waverec(coeffs, wavelet='dmey')
@@ -118,22 +119,22 @@ def threholdPartial(signal, wavelet='dmey', level=5):
 # noise = np.random.standard_normal(sampleRate) * 0.1
 # signal += noise
 # level = 3
+# wavelet = 'dmey'
 # form = signal.dtype
 
+
 # Noisy possum Test
-sampleRate, signal = wave.read('recordings/cat.wav')
+sampleRate, signal = wave.read('recordings/PossumNoisy.wav') # possum.wav works well Haar, 5, partial, thres=96*4.5
 form = signal.dtype
+wavelet = 'haar'
+level = 5
 
 # signal = (signal - np.mean(signal)) / np.std(signal) # Normalisation
 
 print(pywt.wavelist(kind='discrete'))
 
-wavelet = 'dmey'
-level = 8
-
-denoised = thresholdFull(signal, wavelet=wavelet, level=level)
-
-print(denoised)
+# denoised = thresholdFull(signal, wavelet=wavelet, level=level)
+denoised = thresholdPartial(signal, wavelet=wavelet, level=level)
 
 plt.figure()
 plt.title('Original/Denoised signal')
