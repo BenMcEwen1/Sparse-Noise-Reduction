@@ -2,7 +2,7 @@ import scipy.io.wavfile as wave
 import numpy as np
 import pywt
 from scipy.signal import chirp
-from scipy.stats import entropy
+from scipy.stats import entropy, kstest, uniform
 import matplotlib.pyplot as plt
 import time
 
@@ -14,7 +14,10 @@ import time
 #     e = data[np.nonzero(norm)]**2 * np.log2(data[np.nonzero(norm)]**2)
 #     return -np.sum(e)
 
-
+def KS(data):
+    # Kolmogororov-Smirnov test of uniformity
+    Uniformity = kstest(data, uniform(loc=0.0, scale=len(data)).cdf)
+    return Uniformity.statistic
 
 
 def decomposition(signal, level):
@@ -50,11 +53,11 @@ def partialTree(signal, levels=5, plot=False):
     return coeffs
 
 
-def decomposeFull(signal, wavelet='dmey', level=5, plot=False):
+def decomposeFull(signal, wavelet='dmey', levels=5, plot=False):
     # Return leaf coeffs of full tree
     coeffs = [signal]
 
-    for i in range(level):
+    for i in range(levels):
         temp = []
         for coeff in coeffs:
             (A,D) = pywt.dwt(coeff, wavelet)
@@ -93,15 +96,13 @@ def reconstructFull(coeffs, wavelet='dmey', plot=False):
     return coeffs[0]
 
 
-def thresholdFull(signal, wavelet='dmey', level=5):
+def thresholdFull(signal, thres, wavelet='dmey', levels=5):
     e = entropy(abs(signal))
     stop = False
-    print(f"Initial Entropy: {e}")
 
-    for l in range(1,level+1):
-        coeffs = decomposeFull(signal, wavelet=wavelet, level=l, plot=False)
+    for l in range(1,levels+1): # For final leaf nodes set the start range = levels
+        coeffs = decomposeFull(signal, wavelet=wavelet, levels=l, plot=False)
 
-        print(f"Level: {l}")
         currentE = []
 
         for coeff in coeffs:
@@ -112,15 +113,16 @@ def thresholdFull(signal, wavelet='dmey', level=5):
             print(f"Stopping at level: {l}")
             stop = True
         else:
-            print(f"Current max {max(currentE)}, previous max {e}")
             e = max(currentE) 
 
         # Apply thresholding to detailed coeffs
         for i,coeff in enumerate(coeffs):
-            # if i != 0:
-            thres = 1*np.std(coeff)
-            thres = 10
-            coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
+            # thres = 0.2*np.std(coeff)
+            thres = thres*0.6
+            thres = universalThresholding(coeff) # Use garrote
+            # print(thres)
+            # thres = thres * 0.002
+            coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # soft or garote works well
 
         # Reconstruct each level
         signal = reconstructFull(coeffs, wavelet=wavelet, plot=False) # Full tree reconstruction
@@ -131,19 +133,39 @@ def thresholdFull(signal, wavelet='dmey', level=5):
     return signal
 
 
-def thresholdPartial(signal, wavelet='dmey', level=5):
-    coeffs = partialTree(signal, levels=level, plot=False)
+def thresholdPartial(signal, thres, wavelet='dmey', level=5):
+    coeffs = partialTree(signal, levels=level, plot=True)
 
     for i,coeff in enumerate(coeffs):
         if i != 0: # First index is the Approximate node, careful!
-            thres = 1*np.std(coeff)
-            print(thres)
-            thres = 96 # AviaNZ suggests the std of the lowest packet x4.5
+            thres = thres # AviaNZ suggests the std of the lowest packet x4.5
+            thres = universalThresholding(coeff)
             coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
 
     signal = pywt.waverec(coeffs, wavelet='dmey')
 
     return signal
+
+
+def findThres(signal, maxLevel):
+    coeffs = decomposeFull(signal, levels=maxLevel)
+    return np.std(coeffs[0])
+
+
+def uniformity(signal, maxLevel):
+    coeffs = decomposeFull(signal, levels=maxLevel)
+    s = []
+    for coeff in coeffs:
+        if KS(coeff) > 0.90:
+            s.append(np.std(coeffs))
+
+    return np.average(s)
+
+def universalThresholding(coeffs):
+    v = np.median(abs(coeffs))/0.6745
+    N = len(coeffs)
+
+    return v * np.sqrt(2*np.log(N))
 
 
 # # Chirp (Test signal)
@@ -172,8 +194,17 @@ level = pywt.dwt_max_level(len(signal), wavelet) # Calculate the maximum level
 # print(pywt.wavelist(kind='discrete'))
 
 print(f"Max level: {level}")
-denoised = thresholdFull(signal, wavelet=wavelet, level=level)
-# denoised = thresholdPartial(signal, wavelet=wavelet, level=level)
+
+thres = findThres(signal, level)
+# thres = universalThresholding(signal)
+print(thres)
+
+# decomposition(signal, level)
+
+
+denoised = thresholdFull(signal, thres, wavelet=wavelet, levels=level)
+# denoised = thresholdPartial(signal, thres, wavelet=wavelet, level=level)
+
 
 plt.figure()
 plt.title('Original/Denoised signal')
