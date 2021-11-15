@@ -102,24 +102,24 @@ def thresholdFull(signal, wavelet='dmey', level=5):
         coeffs = decomposeFull(signal, wavelet=wavelet, level=l, plot=False)
 
         print(f"Level: {l}")
-        eL = []
-        for coeff in coeffs:
-            coeff = np.divide(coeff, sum(coeff))
-            eL.append(entropy(abs(coeff)))
+        currentE = []
 
-        if max(eL) > e:
+        for coeff in coeffs:
+            # coeff = np.divide(coeff, sum(coeff))
+            currentE.append(entropy(abs(coeff)))
+
+        if max(currentE) > e:
             print(f"Stopping at level: {l}")
             stop = True
         else:
-            print(f"Current max {max(eL)}, previous max {e}")
-            e = max(eL) 
-
+            print(f"Current max {max(currentE)}, previous max {e}")
+            e = max(currentE) 
 
         # Apply thresholding to detailed coeffs
         for i,coeff in enumerate(coeffs):
-            thres = 0.5*np.std(coeff)
-            # print(thres)
-            thres = thres * 4.5
+            # if i != 0:
+            thres = 1*np.std(coeff)
+            thres = 10
             coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
 
         # Reconstruct each level
@@ -133,11 +133,12 @@ def thresholdFull(signal, wavelet='dmey', level=5):
 
 def thresholdPartial(signal, wavelet='dmey', level=5):
     coeffs = partialTree(signal, levels=level, plot=False)
+
     for i,coeff in enumerate(coeffs):
         if i != 0: # First index is the Approximate node, careful!
             thres = 1*np.std(coeff)
             print(thres)
-            #thres = 46 * 4.5 # AviaNZ suggests the std of the lowest packet x4.5
+            thres = 96 # AviaNZ suggests the std of the lowest packet x4.5
             coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
 
     signal = pywt.waverec(coeffs, wavelet='dmey')
@@ -151,8 +152,8 @@ def thresholdPartial(signal, wavelet='dmey', level=5):
 # signal = chirp(t, f0=0.1, f1=2, t1=10, method='linear')
 # noise = np.random.standard_normal(sampleRate) * 0.1
 # signal += noise
-# level = 3
 # wavelet = 'dmey'
+# level = pywt.dwt_max_level(len(signal), wavelet) # Calculate the maximum level
 # form = signal.dtype
 
 
@@ -162,15 +163,15 @@ form = signal.dtype
 wavelet = 'dmey'
 
 level = pywt.dwt_max_level(len(signal), wavelet) # Calculate the maximum level
+# level = 5
 
-print(level)
-
+# Normalisation
 # signal = (signal - np.mean(signal)) / np.std(signal) # Normalisation
-signal = np.divide(signal, sum(signal)) # Generate random variable that add to 1.0
-print(signal)
+# signal = np.divide(signal, sum(signal)) # Generate random variable that add to 1.0
 
 # print(pywt.wavelist(kind='discrete'))
 
+print(f"Max level: {level}")
 denoised = thresholdFull(signal, wavelet=wavelet, level=level)
 # denoised = thresholdPartial(signal, wavelet=wavelet, level=level)
 
