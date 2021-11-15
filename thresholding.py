@@ -118,8 +118,8 @@ def thresholdFull(signal, thres, wavelet='dmey', levels=5):
         # Apply thresholding to detailed coeffs
         for i,coeff in enumerate(coeffs):
             # thres = 0.2*np.std(coeff)
-            thres = thres*0.6
-            thres = universalThresholding(coeff) # Use garrote
+            thres = thres * 0.6
+            # thres = universalThresholding(coeff) # Use garrote
             # print(thres)
             # thres = thres * 0.002
             coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # soft or garote works well
@@ -138,8 +138,8 @@ def thresholdPartial(signal, thres, wavelet='dmey', level=5):
 
     for i,coeff in enumerate(coeffs):
         if i != 0: # First index is the Approximate node, careful!
-            thres = thres # AviaNZ suggests the std of the lowest packet x4.5
-            thres = universalThresholding(coeff)
+            thres = thres * 0.6 # AviaNZ suggests the std of the lowest packet x4.5
+            # thres = universalThresholding(coeff)
             coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
 
     signal = pywt.waverec(coeffs, wavelet='dmey')
@@ -202,8 +202,8 @@ print(thres)
 # decomposition(signal, level)
 
 
-denoised = thresholdFull(signal, thres, wavelet=wavelet, levels=level)
-# denoised = thresholdPartial(signal, thres, wavelet=wavelet, level=level)
+# denoised = thresholdFull(signal, thres, wavelet=wavelet, levels=level)
+denoised = thresholdPartial(signal, thres, wavelet=wavelet, level=level)
 
 
 plt.figure()
@@ -215,7 +215,7 @@ plt.show()
 fig, (ax1, ax2) = plt.subplots(2)
 fig.suptitle('Original/Denoised Spectrogram')
 ax1.specgram(signal, Fs=sampleRate)
-denoised = np.asarray(denoised, dtype=form) # Downsample
+# denoised = np.asarray(denoised, dtype=form) # Downsample
 ax2.specgram(denoised, Fs=sampleRate)
 
 plt.show()
