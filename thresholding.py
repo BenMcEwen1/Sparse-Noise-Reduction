@@ -5,7 +5,7 @@ from scipy.signal import chirp
 from scipy.stats import entropy
 import matplotlib.pyplot as plt
 import time
-
+from math import ceil
 
 # def entropy(data):
 #     # Calculate the entropy given packet coefficients
@@ -114,13 +114,53 @@ def thresholdFull(signal, wavelet='dmey', level=5):
         else:
             print(f"Current max {max(currentE)}, previous max {e}")
             e = max(currentE) 
+        
+        print(f"Number of leaves: {len(coeffs)}")
+        print(f"coeffs per leaf: {len(coeffs[0])}")
 
-        # Apply thresholding to detailed coeffs
-        for i,coeff in enumerate(coeffs):
-            # if i != 0:
-            thres = 1*np.std(coeff)
-            thres = 10
-            coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
+        # # aviaNZ thresholding method
+        # stdevs = []
+        # for coeff in coeffs[int(len(coeffs)/2):]:
+        #     stdevs.append(np.std(coeff))
+        # thres = 4.5*np.mean(stdevs)
+        # for i,coeff in enumerate(coeffs):
+        #     # coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
+        #     for j,val in enumerate(coeff):
+        #         if abs(val) < thres:
+        #             #coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
+        #             coeff[j] = coeff[j]*0 #hard thresholding
+        
+        #box search method
+        if l == level: #only thresholding at the lowest level
+            # check maximum entropy at frequency (leaf number) 
+            thres = 0
+            localboxCos = None
+            maxEntropy = 0
+
+            # search through coefficient array with boxes to find highest entropy region, treat this as noise
+            # divide the coefficient array dimensions by 10 for the box size
+            boxHeight = len(coeffs)/10
+            boxWidth = len(coeffs[0])/10
+            for i in range(ceil(boxHeight/2), len(coeffs)-ceil(boxHeight/2), ceil(boxHeight/4)):
+                for j in range(0, len(coeffs[i])-ceil(boxWidth), ceil(boxWidth/2)): #iterate over array with stepsize of 1/2 the box width/height
+
+                    localBox = np.array(coeffs)[i-ceil(boxHeight/2):i+ceil(boxHeight/2), j:j+ceil(boxWidth)]
+
+                    if entropy(abs(localBox.flatten())) > maxEntropy: #store coefficients from box with maximum entropy
+                        maxEntropy = entropy(abs(localBox.flatten()))
+                        localboxCos = [i-ceil(len(coeffs)/20),i+ceil(len(coeffs)/20),j,j+ceil(len(coeffs[i])/10)]
+                        thres = 4.5*np.std(localBox) #thres is 4.5 x standard deviation of 'noise' to cover 99.99% of noise
+
+            # Apply thresholding to all coeffs
+            coeffs = np.array(coeffs)
+            if not localboxCos == None:
+                for i,coeff in enumerate(coeffs):
+                    for j,val in enumerate(coeff):
+                        if abs(val) < thres:
+                            coeff[j] = coeff[j]*0.2 #soft thres-holding
+
+                # # display the region being treated as noise by setting this to low
+                # coeffs[localboxCos[0]:localboxCos[1], localboxCos[2]:localboxCos[3]] = coeffs[localboxCos[0]:localboxCos[1], localboxCos[2]:localboxCos[3]]*0
 
         # Reconstruct each level
         signal = reconstructFull(coeffs, wavelet=wavelet, plot=False) # Full tree reconstruction
@@ -156,9 +196,8 @@ def thresholdPartial(signal, wavelet='dmey', level=5):
 # level = pywt.dwt_max_level(len(signal), wavelet) # Calculate the maximum level
 # form = signal.dtype
 
-
 # Noisy possum Test
-sampleRate, signal = wave.read('recordings/cat.wav') # possum.wav works well Haar or dmey, 5, partial, thres=96*4.5
+sampleRate, signal = wave.read('recordings/PossumNoisy.wav') # possum.wav works well Haar or dmey, 5, partial, thres=96*4.5
 form = signal.dtype
 wavelet = 'dmey'
 
@@ -170,7 +209,6 @@ level = pywt.dwt_max_level(len(signal), wavelet) # Calculate the maximum level
 # signal = np.divide(signal, sum(signal)) # Generate random variable that add to 1.0
 
 # print(pywt.wavelist(kind='discrete'))
-
 print(f"Max level: {level}")
 denoised = thresholdFull(signal, wavelet=wavelet, level=level)
 # denoised = thresholdPartial(signal, wavelet=wavelet, level=level)
