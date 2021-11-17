@@ -26,7 +26,7 @@ def denoise(signal,wavelet, level): #partial tree
 
     return denoised
 
-sampleRate, signal = wave.read('recordings/possum.wav') # possum.wav works well Haar, 5, partial, thres=96*4.5
+sampleRate, signal = wave.read('recordings/cat.wav') # possum.wav works well Haar, 5, partial, thres=96*4.5
 form = signal.dtype
 
 # print((2*np.log2(len(signal)/sampleRate))**0.5)
