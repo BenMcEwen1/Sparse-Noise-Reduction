@@ -231,7 +231,7 @@ form = signal.dtype
 wavelet = 'dmey'
 
 level = pywt.dwt_max_level(len(signal), wavelet) # Calculate the maximum level
-# level = 5
+level = 5
 
 # Normalisation
 # signal = (signal - np.mean(signal)) / np.std(signal) # Normalisation
@@ -244,7 +244,7 @@ thres = findThres(signal, level)
 # thres = universalThresholding(signal)
 print(thres)
 
-# decomposition(signal, level)
+decomposition(signal, level)
 
 
 denoised = thresholdFull(signal, thres, wavelet=wavelet, levels=level)

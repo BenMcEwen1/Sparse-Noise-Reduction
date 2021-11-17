@@ -1,35 +1,101 @@
 import numpy as np
 from scipy import signal
 import scipy.io.wavfile as wave
-from scipy.fft import fftshift
 import matplotlib.pyplot as plt
 
-sampleRate, possum = wave.read('recordings/possum_clean.wav')
-sampleRate, ref = wave.read('recordings/clean_snip.wav')
+
+filename = 'possum_clean'
+
+sampleRate, s = wave.read(f'recordings/{filename}.wav')
+sampleRate, ref = wave.read('recordings/possum_snip.wav')
 
 
-# 1-d correlation of time-domain signal
-possum = possum/max(possum)
-ref = ref/max(ref)
+def spectrograms(recording, ref, sampleRate, plot=False):
+    # Plot spectrograms of recording and ref
+    fp, tp, Sp = signal.spectrogram(recording, fs=sampleRate)
+    fr, tr, Sr = signal.spectrogram(ref, fs=sampleRate)
 
-cor = signal.correlate(possum,ref)
+    e = 1e-11
+    Sp = np.log(Sp + e)
+    Sr = np.log(Sr + e)
 
-plt.figure(1)
-plt.plot(cor)
-plt.show()
+    if plot:
+        cmap = plt.get_cmap('magma')
+        plt.subplot(1,2,1)
+        plt.pcolormesh(tp, fp, Sp, cmap=cmap)
+        plt.subplot(1,2,2)
+        plt.pcolormesh(tr, fr, Sr, cmap=cmap)
+        plt.show()
 
-# 2-d correlation of spectrograms
-sp, fp, tp, imp = plt.specgram(possum, sampleRate)
-sr, fr, tr, imr = plt.specgram(ref, sampleRate)
+    return Sp, Sr
 
-# # plt.pcolormesh(tp, fp, Sp)
-# # plt.ylabel('Frequency [Hz]')
-# # plt.xlabel('Time [sec]')
-# # plt.show()
 
-# corr = signal.correlate2d(sp, sr, boundary='symm', mode='same')
-conv = signal.convolve2d(sp, sr)
+def correlation(recording, ref, sampleRate):
+    # Convolve spectrogram with ref to generate correlation
+    Sp, Sr = spectrograms(recording, ref, sampleRate, plot=True)
 
-plt.imshow(sp)
-plt.imshow(conv)
-plt.show()
+    cor = signal.convolve2d(Sp, Sr, mode="valid", boundary="wrap")
+
+    cor = abs(np.subtract(cor[0],max(cor[0])))   
+    cor = np.interp(cor, (cor.min(),cor.max()), (0,1)) 
+
+    return cor
+
+
+def dilation(recommend, k=50):
+    # Expand binary mask to include surrounding areas
+    d = []
+    for i in range(len(recommend)):
+        if any(recommend[i-k:i+k]) == 1:
+            d.append(1)
+        else:
+            d.append(0)
+    return d
+
+
+def findRegions(correlation, threshold=0.4):
+    # Find the regions of interest
+    recommend = []
+    for c in correlation:
+        if c >= threshold:
+            recommend.append(1)
+        else:
+            recommend.append(0)
+
+    return dilation(recommend)
+
+
+def segment(signal, mask):
+    # Segment regions of interest
+    return np.multiply(signal, mask)
+
+
+def extractTimeStamp(mask, sampleRate):
+    # Return time stamp of regions of interest
+    state = mask[0]
+    stamp = []
+    for i,m in enumerate(mask):
+        if m != state:
+            stamp.append(i)
+            state = m
+
+    # convert to time domain
+    stamp = np.multiply(stamp,238.5)
+    return stamp
+
+
+def save(signal, sampleRate, stamp, filename):
+    # Save segmented signal
+    for i in range(0, len(stamp), 2):
+        seg = signal[int(stamp[i]):int(stamp[i+1])]
+        wave.write(f'segmented/{filename}_{i}.wav', sampleRate, seg)
+
+
+
+cor = correlation(s, ref, sampleRate)
+mask = findRegions(cor)
+seg = segment(cor, mask)
+
+stamp = extractTimeStamp(mask, sampleRate)
+
+save(s, sampleRate, stamp, filename)
