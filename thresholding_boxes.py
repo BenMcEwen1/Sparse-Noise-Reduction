@@ -6,13 +6,7 @@ from scipy.stats import entropy, kstest, uniform
 import matplotlib.pyplot as plt
 import time
 from math import ceil
-
-# def entropy(data):
-#     # Calculate the entropy given packet coefficients
-#     # print(data)
-#     norm = np.linalg.norm(data)
-#     e = data[np.nonzero(norm)]**2 * np.log2(data[np.nonzero(norm)]**2)
-#     return -np.sum(e)
+from matplotlib.patches import Polygon
 
 def KS(data):
     # Kolmogororov-Smirnov test of uniformity
@@ -115,53 +109,120 @@ def thresholdFull(signal, thres, wavelet='dmey', levels=5):
         else:
             e = max(currentE) 
         
+        print(f"Level {l}")
         print(f"Number of leaves: {len(coeffs)}")
-        print(f"coeffs per leaf: {len(coeffs[0])}")
+        print(f"Coeffs per leaf: {len(coeffs[0])}")
 
-        # # aviaNZ thresholding method
-        # stdevs = []
-        # for coeff in coeffs[int(len(coeffs)/2):]:
-        #     stdevs.append(np.std(coeff))
-        # thres = 4.5*np.mean(stdevs)
-        # for i,coeff in enumerate(coeffs):
-        #     # coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
-        #     for j,val in enumerate(coeff):
-        #         if abs(val) < thres:
-        #             #coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
-        #             coeff[j] = coeff[j]*0 #hard thresholding
+        if False:
+            # # aviaNZ thresholding method
+            # stdevs = []
+            # for coeff in coeffs[int(len(coeffs)/2):]:
+            #     stdevs.append(np.std(coeff))
+            # thres = 4.5*np.mean(stdevs)
+            # for i,coeff in enumerate(coeffs):
+            #     # coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
+            #     for j,val in enumerate(coeff):
+            #         if abs(val) < thres:
+            #             #coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
+            #             coeff[j] = coeff[j]*0 #hard thresholding
+            pass
         
         #box search method
         if l == level: #only thresholding at the lowest level
             # check maximum entropy at frequency (leaf number) 
-            thres = 0
-            localboxCos = None
-            maxEntropy = 0
+            threses = []
+            vertStrips = []
 
             # search through coefficient array with boxes to find highest entropy region, treat this as noise
             # divide the coefficient array dimensions by 10 for the box size
-            boxHeight = len(coeffs)/10
-            boxWidth = len(coeffs[0])/10
-            for i in range(ceil(boxHeight/2), len(coeffs)-ceil(boxHeight/2), ceil(boxHeight/4)):
-                for j in range(0, len(coeffs[i])-ceil(boxWidth), ceil(boxWidth/2)): #iterate over array with stepsize of 1/2 the box width/height
+            [boxHeight,boxWidth] = [ceil(len(coeffs)/10)*2,ceil(len(coeffs[0])/20)*2]
+            for j in range(0, len(coeffs[0])-int(boxWidth/2), int(boxWidth/2)): #iterate over array with stepsize of 1/2 the box width/height
+                vertStrips.append([])
+                threses.append([])
+                maxEntropy = 0
 
-                    localBox = np.array(coeffs)[i-ceil(boxHeight/2):i+ceil(boxHeight/2), j:j+ceil(boxWidth)]
+                for i in range(int(boxHeight/2), len(coeffs)-int(boxHeight/4), int(boxHeight/2)):
 
+                    localBox = np.array(coeffs)[i-int(boxHeight/2):i+int(boxHeight/2), j:j+boxWidth]
                     if entropy(abs(localBox.flatten())) > maxEntropy: #store coefficients from box with maximum entropy
                         maxEntropy = entropy(abs(localBox.flatten()))
-                        localboxCos = [i-ceil(len(coeffs)/20),i+ceil(len(coeffs)/20),j,j+ceil(len(coeffs[i])/10)]
-                        thres = 4.5*np.std(localBox) #thres is 4.5 x standard deviation of 'noise' to cover 99.99% of noise
+                        localboxCos = [i-int(boxHeight/2),i+int(boxHeight/2),j,j+boxWidth]
+                        threses[len(threses)-1] = 4.5*np.std(localBox) #thres is 4.5 x standard deviation of 'noise' to cover 99.99% of noise
 
-            # Apply thresholding to all coeffs
-            coeffs = np.array(coeffs)
-            if not localboxCos == None:
-                for i,coeff in enumerate(coeffs):
-                    for j,val in enumerate(coeff):
-                        if abs(val) < thres:
-                            coeff[j] = coeff[j]*0.2 #soft thres-holding
+                vertStrips[len(vertStrips)-1] = localboxCos
+            
+            #horizontal box section
+            threses2 = []
+            horStrips = []
+            [boxHeight,boxWidth] = [ceil(len(coeffs)/40)*2,ceil(len(coeffs[0])/20)*2]
+            
+            for i in range(int(boxHeight/2), len(coeffs)-int(boxHeight/4), int(boxHeight/2)):
+                horStrips.append([])
+                threses2.append([])
+                maxEntropy = 0
 
-                # # display the region being treated as noise by setting this to low
-                # coeffs[localboxCos[0]:localboxCos[1], localboxCos[2]:localboxCos[3]] = coeffs[localboxCos[0]:localboxCos[1], localboxCos[2]:localboxCos[3]]*0
+                for j in range(0, len(coeffs[0])-int(boxWidth/2), int(boxWidth/2)): #iterate over array with stepsize of 1/2 the box width/height
 
+                    localBox = np.array(coeffs)[i-int(boxHeight/2):i+int(boxHeight/2), j:j+boxWidth]
+                    if entropy(abs(localBox.flatten())) > maxEntropy: #store coefficients from box with maximum entropy
+                        maxEntropy = entropy(abs(localBox.flatten()))
+                        localboxCos = [i-int(boxHeight/2),i+int(boxHeight/2),j,j+boxWidth]
+                        threses2[len(threses2)-1] = 4.5*np.std(localBox) #thres is 4.5 x standard deviation of 'noise' to cover 99.99% of noise
+
+                horStrips[len(horStrips)-1] = localboxCos
+
+            #horizontal threshold pass
+            for i,coeff in enumerate(coeffs):
+                for j,val in enumerate(coeff):
+
+                    foundBox = False
+                    for k in range(len(horStrips)):
+
+                        if (i >= horStrips[k][0]) and (i <= horStrips[k][1]):
+                            thres = threses2[k]
+                            foundBox = True
+
+                    if not foundBox: 
+                        thres = 0
+                        # print('oops')
+                        print(i*(sampleRate/2)/len(coeffs))
+
+                    if abs(val) < thres:
+                        coeff[j] = coeff[j]*0.4 #soft thres-holding
+
+            # Apply thresholding to all coeffs (vertical pass)
+            for i,coeff in enumerate(coeffs):
+                for j,val in enumerate(coeff):
+
+                    foundBox = False
+                    for k in range(len(vertStrips)):
+
+                        if (j >= vertStrips[k][2]) and (j <= vertStrips[k][3]):
+                            thres = threses[k]
+                            foundBox = True
+
+                    if not foundBox: 
+                        thres = 0
+                        # print('oops')
+                        print(j*(len(signal)/sampleRate)/len(coeffs[0]))
+
+                    if abs(val) < thres:
+                        coeff[j] = coeff[j]*0.4 #soft thres-holding
+            
+            #thresholding for low frequencies (<800 Hz)
+            for i,coeff in enumerate(coeffs):
+                for j,val in enumerate(coeff):
+                    if i*(sampleRate/2)/len(coeffs) < 900:
+                        coeff[j] = coeff[j]*0.1
+
+            specGraphBoxes = []
+            for box in vertStrips:
+                boxCos = [(sampleRate/2)*box[0]/len(coeffs),(sampleRate/2)*box[1]/len(coeffs),(len(signal)/sampleRate)*box[2]/len(coeffs[0]),(len(signal)/sampleRate)*box[3]/len(coeffs[0])]
+                specGraphBoxes.append(boxCos)
+            specGraphBoxes2 = []
+            for box in horStrips:
+                boxCos = [(sampleRate/2)*box[0]/len(coeffs),(sampleRate/2)*box[1]/len(coeffs),(len(signal)/sampleRate)*box[2]/len(coeffs[0]),(len(signal)/sampleRate)*box[3]/len(coeffs[0])]
+                specGraphBoxes2.append(boxCos)
         # # Apply thresholding to detailed coeffs
         # for i,coeff in enumerate(coeffs):
         #     # thres = 0.2*np.std(coeff)
@@ -177,7 +238,7 @@ def thresholdFull(signal, thres, wavelet='dmey', levels=5):
         if stop:
             break
 
-    return signal
+    return signal, [specGraphBoxes,specGraphBoxes2]
 
 
 def thresholdPartial(signal, thres, wavelet='dmey', level=5):
@@ -208,6 +269,7 @@ def uniformity(signal, maxLevel):
 
     return np.average(s)
 
+
 def universalThresholding(coeffs):
     v = np.median(abs(coeffs))/0.6745
     N = len(coeffs)
@@ -215,24 +277,14 @@ def universalThresholding(coeffs):
     return v * np.sqrt(2*np.log(N))
 
 
-# # Chirp (Test signal)
-# sampleRate = 1000
-# t = np.linspace(0, 10, sampleRate)
-# signal = chirp(t, f0=0.1, f1=2, t1=10, method='linear')
-# noise = np.random.standard_normal(sampleRate) * 0.1
-# signal += noise
-# wavelet = 'dmey'
-# level = pywt.dwt_max_level(len(signal), wavelet) # Calculate the maximum level
-# form = signal.dtype
-
 # Noisy possum Test
 sampleRate, signal = wave.read('recordings/PossumNoisy.wav') # possum.wav works well Haar or dmey, 5, partial, thres=96*4.5
 form = signal.dtype
 wavelet = 'dmey'
+print(sampleRate)
 
 level = pywt.dwt_max_level(len(signal), wavelet) # Calculate the maximum level
-level = 5
-
+# level = 9
 # Normalisation
 # signal = (signal - np.mean(signal)) / np.std(signal) # Normalisation
 # signal = np.divide(signal, sum(signal)) # Generate random variable that add to 1.0
@@ -246,7 +298,7 @@ print(thres)
 # decomposition(signal, level)
 
 
-denoised = thresholdFull(signal, thres, wavelet=wavelet, levels=level)
+denoised, specGraphBoxes = thresholdFull(signal, thres, wavelet=wavelet, levels=level)
 # denoised = thresholdPartial(signal, thres, wavelet=wavelet, level=level)
 
 
@@ -261,6 +313,17 @@ fig.suptitle('Original/Denoised Spectrogram')
 ax1.specgram(signal, Fs=sampleRate)
 # denoised = np.asarray(denoised, dtype=form) # Downsample
 ax2.specgram(denoised, Fs=sampleRate)
+
+#display boxes of noise selection
+for box in specGraphBoxes[0]: #vertical pass
+    box = np.array([[box[2],box[0]],[box[3],box[0]],[box[3],box[1]],[box[2],box[1]]])
+    p = Polygon(box, fill=False, color='black')
+    ax1.add_patch(p)
+
+for box in specGraphBoxes[1]:#horizontal pass
+    box = np.array([[box[2],box[0]],[box[3],box[0]],[box[3],box[1]],[box[2],box[1]]])
+    p = Polygon(box, fill=False, color='red')
+    ax1.add_patch(p)
 
 plt.show()
 
