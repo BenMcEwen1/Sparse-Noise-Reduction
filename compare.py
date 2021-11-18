@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import os
 
 
-filename = 'denoised/possum44k'
+filename = 'denoised/cat44k'
 
 sampleRate, s = wave.read(f'recordings/{filename}.wav')
 
@@ -52,7 +52,9 @@ def correlation(recording, masks, sampleRate):
     upper = 0
 
     for mask in masks:
-        c = signal.convolve2d(Sp, mask, mode="valid", boundary="wrap")
+        c = signal.correlate(Sp, mask, mode="valid")
+
+        # print(c)
         c = abs(np.subtract(c[0],max(c[0])))  
 
         if c.min() < lower:
@@ -147,9 +149,14 @@ def rank(correlation, stamps):
     rs = []
     for i,stamp in enumerate(stamps):
 
+        # If length of list is odd add timestamp to end
+        if (len(stamp) % 2):
+            stamp.append(len(correlation[i]))
+
         cor = correlation[i]
         r = []
         for j in range(0,len(stamp),2):
+            
             maxCorrelation = max(cor[int(stamp[j]):int(stamp[j+1])])
             r.append(((stamp[j],stamp[j+1]), maxCorrelation))
         
@@ -174,7 +181,7 @@ cor = correlation(s, masks, sampleRate)
 for i,c in enumerate(cor):
     print(calls[i])
     plt.plot(c)
-    plt.ylim(0,1.2)
+    plt.ylim(0,1.1)
     plt.show()
 
 # Extract regions of interest
@@ -182,6 +189,10 @@ regions = findRegions(cor)
 
 # Segment regions of interest given regions
 seg = segment(cor, regions)
+
+# for s in seg:
+#     plt.plot(s)
+#     plt.show()
 
 # Extract time stamps
 stamp = extractTimeStamp(regions, sampleRate)

@@ -17,18 +17,28 @@ Sp = np.log(Sp + e)
 possum = np.load('reference/normalised/possum.npy')
 
 # Test
-test = np.zeros((129,31))
+test = np.ones((129,31)) * -1
 
-test[5:15] = 1
+test[5:15] = 10
 
-testSignal = np.zeros((129,1719))
+testSignal = np.ones((129,1719))
 
-testSignal[5:15] = 1
-testSignal.T[0:50] = 0
-testSignal.T[500:1500] = 0
+testSignal[5:15] = 10
+testSignal.T[0:50] = 1
+testSignal.T[500:1400] = 1
+testSignal.T[1600:1719] = 1
 
 print(test.shape)
 print(testSignal.shape)
+
+
+# test = np.flipud(test)
+
+# plt.imshow(test)
+# plt.show()
+
+# plt.imshow(testSignal)
+# plt.show()
 
 
 
@@ -58,7 +68,9 @@ print(testSignal.shape)
 # plt.show()
 
 
-c = signal.convolve2d(testSignal, test, mode="valid", boundary="wrap")
+c = signal.correlate(Sp, possum, 'valid')
+
+# c = signal.convolve2d(testSignal, test, mode="valid", boundary="wrap")
 print(c)
 # c = abs(np.subtract(c[0],max(c[0])))  
 c = c[0]
