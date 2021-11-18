@@ -2,35 +2,75 @@ import numpy as np
 from scipy import signal
 import scipy.io.wavfile as wave
 import matplotlib.pyplot as plt
+import os
 
 
-filename = 'possum_clean'
+filename = 'denoised/possum44k'
 
 sampleRate, s = wave.read(f'recordings/{filename}.wav')
-sampleRate, ref = wave.read('recordings/possum_snip.wav')
+
+directory = 'reference/original'
 
 
-def spectrograms(recording, ref, sampleRate, plot=False):
+def extract(directory):
+    # Extract recordings, repalce with SD card directory
+    masks = []
+    calls = []
+
+    for dirpaths, dirnames, filenames in os.walk(directory):
+        for filename in filenames:
+            data = np.load(f"{directory}/{filename}")
+            calls.append(filename)
+            masks.append(data)
+
+    return masks, calls
+
+
+def spectrograms(recording, sampleRate, plot=False):
     # Plot spectrograms of recording and ref
     fp, tp, Sp = signal.spectrogram(recording, fs=sampleRate)
-    fr, tr, Sr = signal.spectrogram(ref, fs=sampleRate)
 
     e = 1e-11
     Sp = np.log(Sp + e)
-    Sr = np.log(Sr + e)
 
     if plot:
         cmap = plt.get_cmap('magma')
-        plt.subplot(1,2,1)
-        plt.pcolormesh(tp, fp, Sp, cmap=cmap)
-        plt.subplot(1,2,2)
-        plt.pcolormesh(tr, fr, Sr, cmap=cmap)
+        plt.pcolormesh(tp, fp, Sp, cmap=cmap, shading='auto')
         plt.show()
 
-    return Sp, Sr
+    return Sp
 
 
-def correlation(recording, ref, sampleRate):
+def correlation(recording, masks, sampleRate):
+    # Convolve spectrogram with ref to generate correlation
+    Sp = spectrograms(recording, sampleRate)
+
+    cor = []
+    scaled = []
+
+    lower = 0
+    upper = 0
+
+    for mask in masks:
+        c = signal.convolve2d(Sp, mask, mode="valid", boundary="wrap")
+        c = abs(np.subtract(c[0],max(c[0])))  
+
+        if c.min() < lower:
+            lower = c.min()
+        if c.max() > upper:
+            upper = c.max()
+        
+        cor.append(c)
+
+    # Scale correlation relative to upper and lower values
+    for c in cor:
+        c = np.interp(c, (lower,upper), (0,1)) 
+        scaled.append(c)
+
+    return scaled
+
+
+def correlation2(recording, ref, sampleRate):
     # Convolve spectrogram with ref to generate correlation
     Sp, Sr = spectrograms(recording, ref, sampleRate, plot=True)
 
@@ -53,49 +93,107 @@ def dilation(recommend, k=50):
     return d
 
 
-def findRegions(correlation, threshold=0.4):
+def findRegions(correlation, threshold=0.5):
     # Find the regions of interest
-    recommend = []
-    for c in correlation:
-        if c >= threshold:
-            recommend.append(1)
-        else:
-            recommend.append(0)
+    regions = []
+    for cor in correlation:
+        recommend = []
+        for c in cor:
+            if c >= threshold:
+                recommend.append(1) # append highest correlation for that region
+            else:
+                recommend.append(0)
 
-    return dilation(recommend)
+        regions.append(dilation(recommend))
+
+    return regions 
 
 
-def segment(signal, mask):
+def segment(cor, mask):
     # Segment regions of interest
-    return np.multiply(signal, mask)
-
-
-def extractTimeStamp(mask, sampleRate):
-    # Return time stamp of regions of interest
-    state = mask[0]
-    stamp = []
+    seg = []
     for i,m in enumerate(mask):
-        if m != state:
-            stamp.append(i)
-            state = m
+        seg.append(np.multiply(cor[i], m))
+    return seg
 
-    # convert to time domain
-    stamp = np.multiply(stamp,238.5)
+
+def extractTimeStamp(masks, sampleRate):
+    # Return time stamp of regions of interest
+    
+    stamp = []
+    for mask in masks:
+        state = mask[0]
+        times = []
+        for i,m in enumerate(mask):
+            if m != state:
+                times.append(i)
+                state = m
+        stamp.append(times)
+
     return stamp
 
 
 def save(signal, sampleRate, stamp, filename):
     # Save segmented signal
+    stamp = np.multiply(stamp,238.5)
+
     for i in range(0, len(stamp), 2):
         seg = signal[int(stamp[i]):int(stamp[i+1])]
         wave.write(f'segmented/{filename}_{i}.wav', sampleRate, seg)
 
 
+def rank(correlation, stamps):
+    # Rank in order of highest correlation
+    rs = []
+    for i,stamp in enumerate(stamps):
 
-cor = correlation(s, ref, sampleRate)
-mask = findRegions(cor)
-seg = segment(cor, mask)
+        cor = correlation[i]
+        r = []
+        for j in range(0,len(stamp),2):
+            maxCorrelation = max(cor[int(stamp[j]):int(stamp[j+1])])
+            r.append(((stamp[j],stamp[j+1]), maxCorrelation))
+        
+        rs.append(r)
 
-stamp = extractTimeStamp(mask, sampleRate)
+    return rs
 
-save(s, sampleRate, stamp, filename)
+# Extract masks
+masks, calls = extract(directory)
+
+norm = []
+for mask in masks:
+    # mask = np.subtract((mask / mask.max()), mask.max()/2)
+    mask = np.subtract(mask, mask.max()/2)
+    norm.append(mask)
+
+masks = norm
+
+# For a given field recording and array of masks generate array of correlations
+cor = correlation(s, masks, sampleRate)
+
+for i,c in enumerate(cor):
+    print(calls[i])
+    plt.plot(c)
+    plt.ylim(0,1.2)
+    plt.show()
+
+# Extract regions of interest
+regions = findRegions(cor)
+
+# Segment regions of interest given regions
+seg = segment(cor, regions)
+
+# Extract time stamps
+stamp = extractTimeStamp(regions, sampleRate)
+
+# Display correlation/rank with relevant time stamp
+r = rank(cor, stamp)
+
+# Combine
+def combine(calls, r):
+    com = []
+    for i in range(len(calls)):
+        com.append((calls[i], r[i]))
+    return com
+
+print(combine(calls,r))

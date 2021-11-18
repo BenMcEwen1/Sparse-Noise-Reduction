@@ -2,36 +2,69 @@ from scipy.stats import entropy, kstest, uniform
 from scipy.signal import normalize
 import numpy as np
 import random
+import scipy.io.wavfile as wave
+from scipy import signal
+import matplotlib.pyplot as plt
+
+filename = 'denoised/possum44k'
+sampleRate, s = wave.read(f'recordings/{filename}.wav')
+
+fp, tp, Sp = signal.spectrogram(s, fs=sampleRate)
+
+e = 1e-11
+Sp = np.log(Sp + e)
+
+possum = np.load('reference/normalised/possum.npy')
+
+# Test
+test = np.zeros((129,31))
+
+test[5:15] = 1
+
+testSignal = np.zeros((129,1719))
+
+testSignal[5:15] = 1
+testSignal.T[0:50] = 0
+testSignal.T[500:1500] = 0
+
+print(test.shape)
+print(testSignal.shape)
 
 
-# # Test entropy
-# s = [0.5,0.5]
 
-# print(entropy(s, base=2))
+# # Absolute ref
+# possum = abs(possum)
+# plt.imshow(possum)
+# plt.show()
 
-# signal = [1,2,3,4]
+# # Normalise ref
+# possum = possum / possum.max()
+# plt.imshow(possum)
+# plt.show()
 
+# # Square
+# possum = possum ** 2
 
-# # Test Uniformity
+#-------------------------------------------
 
-# def KS(data):
-#     # Kolmogororov-Smirnov test of uniformity
-#     Uniformity = kstest(data, uniform(loc=0.0, scale=len(data)).cdf)
-#     return Uniformity.statistic
+# Absolute signal
+# Sp = abs(Sp)
+# plt.imshow(Sp)
+# plt.show()
 
-# signal = [1,1,1,1,2,3,4,3,2,1,1,1,1,1,1]
-# signal = np.divide(signal,sum(signal))
-
-# print(KS(signal))
-
-
-# Convolve
-s = np.ones((10,10))
-k = np.ones((10,10))
-
-print(s)
-print(k)
+# Normalise signal
+# Sp = Sp / Sp.max()
+# plt.imshow(Sp)
+# plt.show()
 
 
-# Dot product
-print(np.dot(s[0:10],k))
+c = signal.convolve2d(testSignal, test, mode="valid", boundary="wrap")
+print(c)
+# c = abs(np.subtract(c[0],max(c[0])))  
+c = c[0]
+# c = np.interp(c, (c.min(),c.max()), (0,1)) 
+
+print(c.shape)
+plt.plot(c)
+plt.show()
+
