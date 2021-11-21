@@ -6,77 +6,67 @@ import scipy.io.wavfile as wave
 from scipy import signal
 import matplotlib.pyplot as plt
 
-filename = 'denoised/possum44k'
+filename = 'downsampled/cat16k'
 sampleRate, s = wave.read(f'recordings/{filename}.wav')
 
 fp, tp, Sp = signal.spectrogram(s, fs=sampleRate)
 
-e = 1e-11
-Sp = np.log(Sp + e)
 
-possum = np.load('reference/normalised/possum.npy')
-
-# Test
-test = np.ones((129,31)) * -1
-
-test[5:15] = 10
-
-testSignal = np.ones((129,1719))
-
-testSignal[5:15] = 10
-testSignal.T[0:50] = 1
-testSignal.T[500:1400] = 1
-testSignal.T[1600:1719] = 1
-
-print(test.shape)
-print(testSignal.shape)
-
-
-# test = np.flipud(test)
-
-# plt.imshow(test)
-# plt.show()
-
-# plt.imshow(testSignal)
-# plt.show()
+possum = np.load('reference/original/possum_NL.npy')
+cat = np.load('reference/original/cat_NL.npy')
 
 
 
-# # Absolute ref
-# possum = abs(possum)
-# plt.imshow(possum)
-# plt.show()
+print(f"Sum Energy: {possum.sum()}")
 
-# # Normalise ref
-# possum = possum / possum.max()
-# plt.imshow(possum)
-# plt.show()
-
-# # Square
-# possum = possum ** 2
-
-#-------------------------------------------
-
-# Absolute signal
-# Sp = abs(Sp)
-# plt.imshow(Sp)
-# plt.show()
-
-# Normalise signal
-# Sp = Sp / Sp.max()
-# plt.imshow(Sp)
-# plt.show()
+# Smoothing to reduce the effects of noise
+kernel = np.ones((2,2)) * 0.5
+# smoothed = signal.convolve2d(possum, kernel, mode='same', boundary='wrap', fillvalue=0)
 
 
-c = signal.correlate(Sp, possum, 'valid')
 
-# c = signal.convolve2d(testSignal, test, mode="valid", boundary="wrap")
-print(c)
-# c = abs(np.subtract(c[0],max(c[0])))  
-c = c[0]
-# c = np.interp(c, (c.min(),c.max()), (0,1)) 
+def normalise(mask):
+    # Normalise to prevent higher energy masks becoming biased
+    mask = signal.convolve2d(mask, kernel, mode='same', boundary='wrap', fillvalue=0)
+    norm = np.linalg.norm(mask)
+    mask = np.divide(mask, norm)
+    mask = mask / mask.sum()
+    return mask
 
-print(c.shape)
-plt.plot(c)
+
+possum = normalise(possum)
+cat = normalise(cat)
+
+
+plt.imshow(possum)
 plt.show()
 
+plt.imshow(cat)
+plt.show()
+
+filters = [possum, cat]
+
+lower = 0
+upper = 0
+cor = []
+
+for mask in filters:
+    c = signal.correlate(Sp, mask, 'valid')
+
+    cor.append(c[0])
+
+    if c.min() < lower:
+        lower = c.min()
+    if c.max() > upper:
+        upper = c.max()
+
+scaled = []
+for c in cor:
+    c = np.interp(c, (lower,upper), (0,1)) 
+    scaled.append(c)
+
+
+for s in scaled:
+    plt.plot(s)
+    plt.ylim(0,1.1)
+    plt.show()

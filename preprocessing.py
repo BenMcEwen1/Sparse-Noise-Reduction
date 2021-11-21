@@ -35,12 +35,12 @@ def generateRef(filename, name):
     sampleRate, ref = wave.read(f'recordings/{filename}.wav')
 
     fr, tr, Sr = signal.spectrogram(ref, fs=sampleRate)
-    e = 1e-11
-    Sr = np.log(Sr + e)
+    # e = 1e-11
+    # Sr = np.log(Sr + e)
 
-    np.save(f'reference/{name}.npy', Sr)
+    np.save(f'reference/original/{name}_NL.npy', Sr)
 
-# generateRef('ref/noise_snip', 'noise')
+generateRef('ref/noise_snip', 'noise')
 
 # White noise
 # w = np.ones((129,30)) * 100

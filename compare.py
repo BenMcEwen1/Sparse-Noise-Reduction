@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import os
 
 
-filename = 'denoised/cat44k'
+filename = 'downsampled/stoat16k' # Careful! signal and reference must have the same sample rates
 
 sampleRate, s = wave.read(f'recordings/{filename}.wav')
 
@@ -20,7 +20,7 @@ def extract(directory):
     for dirpaths, dirnames, filenames in os.walk(directory):
         for filename in filenames:
             data = np.load(f"{directory}/{filename}")
-            calls.append(filename)
+            calls.append(filename[0:-4])
             masks.append(data)
 
     return masks, calls
@@ -30,9 +30,6 @@ def spectrograms(recording, sampleRate, plot=False):
     # Plot spectrograms of recording and ref
     fp, tp, Sp = signal.spectrogram(recording, fs=sampleRate)
 
-    e = 1e-11
-    Sp = np.log(Sp + e)
-
     if plot:
         cmap = plt.get_cmap('magma')
         plt.pcolormesh(tp, fp, Sp, cmap=cmap, shading='auto')
@@ -41,9 +38,22 @@ def spectrograms(recording, sampleRate, plot=False):
     return Sp
 
 
+def normalise(mask):
+    # Normalise to prevent higher energy masks becoming biased
+    norm = np.linalg.norm(mask)
+    mask = np.divide(mask, norm)
+    mask = mask / mask.sum()
+    return mask
+
+
 def correlation(recording, masks, sampleRate):
     # Convolve spectrogram with ref to generate correlation
     Sp = spectrograms(recording, sampleRate)
+
+    # Normalisation
+    Sp = normalise(Sp)
+
+    kernel = np.ones((2,2)) * 0.5
 
     cor = []
     scaled = []
@@ -52,17 +62,20 @@ def correlation(recording, masks, sampleRate):
     upper = 0
 
     for mask in masks:
-        c = signal.correlate(Sp, mask, mode="valid")
+        # Normalise Mask
+        mask = normalise(mask)
 
-        # print(c)
-        c = abs(np.subtract(c[0],max(c[0])))  
+        # Smoothing (Optional)
+        mask = signal.convolve2d(mask, kernel, mode='same', boundary='wrap', fillvalue=0)
+
+        c = signal.correlate(Sp, mask, mode="valid")
 
         if c.min() < lower:
             lower = c.min()
         if c.max() > upper:
             upper = c.max()
         
-        cor.append(c)
+        cor.append(c[0])
 
     # Scale correlation relative to upper and lower values
     for c in cor:
@@ -72,19 +85,7 @@ def correlation(recording, masks, sampleRate):
     return scaled
 
 
-def correlation2(recording, ref, sampleRate):
-    # Convolve spectrogram with ref to generate correlation
-    Sp, Sr = spectrograms(recording, ref, sampleRate, plot=True)
-
-    cor = signal.convolve2d(Sp, Sr, mode="valid", boundary="wrap")
-
-    cor = abs(np.subtract(cor[0],max(cor[0])))   
-    cor = np.interp(cor, (cor.min(),cor.max()), (0,1)) 
-
-    return cor
-
-
-def dilation(recommend, k=50):
+def dilation(recommend, k=20):
     # Expand binary mask to include surrounding areas
     d = []
     for i in range(len(recommend)):
@@ -95,7 +96,7 @@ def dilation(recommend, k=50):
     return d
 
 
-def findRegions(correlation, threshold=0.5):
+def findRegions(correlation, threshold=0.2):
     # Find the regions of interest
     regions = []
     for cor in correlation:
@@ -121,7 +122,6 @@ def segment(cor, mask):
 
 def extractTimeStamp(masks, sampleRate):
     # Return time stamp of regions of interest
-    
     stamp = []
     for mask in masks:
         state = mask[0]
@@ -144,7 +144,7 @@ def save(signal, sampleRate, stamp, filename):
         wave.write(f'segmented/{filename}_{i}.wav', sampleRate, seg)
 
 
-def rank(correlation, stamps):
+def rank(correlation, stamps, calls):
     # Rank in order of highest correlation
     rs = []
     for i,stamp in enumerate(stamps):
@@ -158,53 +158,42 @@ def rank(correlation, stamps):
         for j in range(0,len(stamp),2):
             
             maxCorrelation = max(cor[int(stamp[j]):int(stamp[j+1])])
-            r.append(((stamp[j],stamp[j+1]), maxCorrelation))
-        
-        rs.append(r)
+            r.append((calls[i], (stamp[j],stamp[j+1]), maxCorrelation))
+            # print(r)
+        # rs.append(r)
+        rs.extend(r)
+
+    # Order in terms of correlation
+    rs = sorted(rs, key=lambda x: x[2], reverse=True)
 
     return rs
+
 
 # Extract masks
 masks, calls = extract(directory)
 
-norm = []
-for mask in masks:
-    # mask = np.subtract((mask / mask.max()), mask.max()/2)
-    mask = np.subtract(mask, mask.max()/2)
-    norm.append(mask)
-
-masks = norm
-
 # For a given field recording and array of masks generate array of correlations
 cor = correlation(s, masks, sampleRate)
 
-for i,c in enumerate(cor):
-    print(calls[i])
-    plt.plot(c)
-    plt.ylim(0,1.1)
-    plt.show()
+# for i,c in enumerate(cor):
+#     print(calls[i])
+#     plt.plot(c)
+#     plt.ylim([0,1.1])
+#     plt.show()
 
 # Extract regions of interest
 regions = findRegions(cor)
 
-# Segment regions of interest given regions
 seg = segment(cor, regions)
-
-# for s in seg:
+# for i,s in enumerate(seg):
+#     print(calls[i])
 #     plt.plot(s)
 #     plt.show()
 
 # Extract time stamps
 stamp = extractTimeStamp(regions, sampleRate)
 
-# Display correlation/rank with relevant time stamp
-r = rank(cor, stamp)
+# Display correlation/rank with relevant label and time stamp
+r = rank(cor, stamp, calls)
 
-# Combine
-def combine(calls, r):
-    com = []
-    for i in range(len(calls)):
-        com.append((calls[i], r[i]))
-    return com
-
-print(combine(calls,r))
+print(r)

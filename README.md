@@ -7,8 +7,12 @@ This method uses wavelet Packet Decomposition for noise reduction and compares t
 ## Things to do
 - [x] Comparison between recording spectrograms and reference packets
   
-- [ ] Correlation between multiple reference recordings
-  - [ ] Store references as .npy arrays so they dont need to be converted each time
-- [ ] Standardise shape of recommendations
-- [ ] Rank recommendations in order of highest correlation
-- [ ] Bug fix: case where there is an od number of time stamps
+- [x] Correlation between multiple reference recordings
+  - [x] Store references as .npy arrays so they dont need to be converted each time
+- [x] Standardise shape of recommendations - Can be improved further
+- [x] Rank recommendations in order of highest correlation
+- [x] Bug fix: case where there is an od number of time stamps
+
+- [ ] Generate more masks (unique call types and noise)
+- [ ] Integrate with wavelet denoising 
+- [ ] convert samples to timestamp to segment real time-domain signal
