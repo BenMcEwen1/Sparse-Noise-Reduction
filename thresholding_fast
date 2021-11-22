@@ -50,86 +50,88 @@ def reconstructFull(coeffs, wavelet='dmey', plot=False):
 
     return coeffs[0]
 
+
+def getBoxes(coeffs, decompositionState='full', numboxes=40): #numboxes is number of boxes horizontally, if full decomp. this is repeated for vertical boxes
+    #returns box coordinates in coefficient-leaf form, st. deviation information of boxes
+
+    if decompositionState == 'full':
+        numboxesV = numboxes
+        numboxesH = numboxes
+
+        edge = 0
+
+        boxWidth = int((len(coeffs[0])-edge*2)/numboxesH)
+        boxHeight = int(len(coeffs)/numboxesV)
+        numboxesV = floor(len(coeffs)/boxHeight)
+        numboxesH = floor((len(coeffs[0])-edge*2)/boxWidth)
+        
+        print(f'{numboxesH} boxes {boxWidth} wide, {numboxesV} boxes {boxHeight} tall')
+
+        boxVals = np.empty((numboxesV, numboxesH, boxHeight, boxWidth))
+        boxCos = np.empty((numboxesV, numboxesH, 4))
+
+        for i in range(numboxesV):
+            for j in range(numboxesH):
+                boxVals[i,j] = np.array(coeffs[boxHeight*i:boxHeight*(i+1),boxWidth*j:boxWidth*(j+1)])
+                boxCos[i,j] = np.array([boxHeight*i,boxHeight*(i+1),boxWidth*j,boxWidth*(j+1)])
+
+        maxRowSDs = []
+        minRowSDs = []
+        boxSDs = np.empty((numboxesV, numboxesH))
+
+        for i in range(len(boxVals)): #iterating one row at a time
+            for j in range(len(boxVals[0])): #iterating through each value in row
+                
+                boxSDs[i,j] = np.std(boxVals[i,j].flatten()) #standard deviation of coefficients within box i,j
+
+            # print(f'row {i} has SDs of {boxSDs[i]}')
+            maxRowSDs.append(max(boxSDs[i])) 
+            minRowSDs.append(min(boxSDs[i])) 
+            # print(f'max SD in row {i} is {maxRowSDs[i]}')
+        
+        return boxCos, boxSDs, minRowSDs, maxRowSDs
+        
+
 def thresholdFull(signal, wavelet='dmey', levels=5):
 
     coeffs = decomposeFull(signal, wavelet=wavelet, levels=levels, plot=False)
 
     print(f"Number of leaves: {len(coeffs)}, Coeffs per leaf: {len(coeffs[0])}")
-
-    edge = 0
-
-    boxWidth = int((len(coeffs[0])-edge*2)/10)
-    boxWidth = int(sampleRate*len(coeffs[0])/len(signal))
-    boxHeight = int(len(coeffs)/60)
-    numboxesV = floor(len(coeffs)/boxHeight)
-    numboxesH = floor((len(coeffs[0])-edge*2)/boxWidth)
-    print(f'{numboxesH} boxes {boxWidth} wide, {numboxesV} boxes {boxHeight} tall')
     
     coeffs = np.array(coeffs)
+    boxWidth = int(sampleRate*len(coeffs[0])/len(signal))
 
-    boxvals = np.empty((numboxesV, numboxesH, boxHeight, boxWidth))
-    boxes = np.empty((numboxesV, numboxesH, 4))
-    print(np.shape(boxvals))
-
-    for i in range(numboxesV):
-        for j in range(numboxesH):
-            boxvals[i,j] = np.array(coeffs[boxHeight*i:boxHeight*(i+1),boxWidth*j:boxWidth*(j+1)])
-            boxes[i,j] = np.array([boxHeight*i,boxHeight*(i+1),boxWidth*j,boxWidth*(j+1)])
-
-    maxRowEs = []
-    minRowStds = []
-    maxColEs = []
-    minColStds = []
-    # maxRowStds = []
-
-    for j in range(len(boxvals[0])):
-        maxe = 0
-        minstd = 999999
-        for i in range(len(boxvals)):
-            if entropy(abs(boxvals[i,j].flatten()))>maxe:
-                maxe = entropy(abs(boxvals[i,j].flatten()))
-                minstd = np.std(boxvals[i,j].flatten())
-        maxColEs.append(maxe)
-        minColStds.append(minstd)
+    # thresholding for low frequencies (<600 Hz)
+    for i,coeff in enumerate(coeffs):
+        for j,val in enumerate(coeff):
+            if (i*(sampleRate/2)/len(coeffs) < 800) and (len(coeffs)>30):#have to check there is sufficient frequency resolution to discard low frequencies
+                coeff[j] = coeff[j]*((i*(sampleRate/2)/len(coeffs))/800)**3
     
-    rowVariance = []
-    for i in range(len(boxvals)):
-        maxe = 0
-        minstd = 999999
-        stdDevs = []
-        for j in range(len(boxvals[0])):
+    boxCos, boxSDs, minRowSDs, maxRowSDs = getBoxes(coeffs, decompositionState='full', numboxes=40)
 
-            stdDevs.append(np.std(boxvals[i,j].flatten()))
+    fig, ax = plt.subplots(1)
+    ax.plot(boxSDs)
 
-            if entropy(abs(boxvals[i,j].flatten()))>maxe:
-                minstd = np.std(boxvals[i,j].flatten())
-                maxe = entropy(abs(boxvals[i,j].flatten()))
-        maxRowEs.append(maxe)
-        minRowStds.append(minstd)
+    fig, ax = plt.subplots(1)
+    ax.plot(np.array(maxRowSDs)-np.array(minRowSDs),range(len(boxCos)))
+
+    rowVariation = np.array(maxRowSDs)-np.array(minRowSDs)
+
+    SDthreshold = 0.75 #boxes with SD greater than 1/8 of the maximum SD are assumed to be signal and not thresholded
+    SDvariationThres = 0.75 #rows with a SD variation greater than 1/7 of the max with not be thresholded
+
+    for ii, row in enumerate(boxCos):
         
-        rowVariance.append(np.std(stdDevs))
-    
-    # boxStdevs = np.empty([len(boxes),len(boxes[0])])
-    # boxEs = boxStdevs
-    # for i in range(len(boxStdevs)):
-    #     for j in range(len(boxStdevs[0])):
-    #         boxStdevs[i,j] = np.std(boxvals[i,j].flatten())
-    #         boxEs[i,j] = entropy(abs(boxvals[i,j].flatten()))
+        thres = minRowSDs[ii]*4.5 #threshold is 4.5 * SD of the lowest SD box in the row
+        softness = 0.1
+        if rowVariation[ii] < max(rowVariation)*SDvariationThres:
+            thres = thres*0.5
 
-    for ii, boxrows in enumerate(boxes):
-        
-        relVariance = (rowVariance[ii]-min(rowVariance))/(max(rowVariance)-min(rowVariance))
-        thres = minRowStds[ii]*4.5 #threshold is 4.5 * the standard deviation of the lowest entropy box in the row
-        softness = 0.3
-        print(f'row {ii}, relative variance {relVariance}')
-        
-        for jj, box in enumerate(boxes[ii]):
+        for jj, box in enumerate(boxCos[ii]):
 
-            thres = max(minRowStds[ii]*4.5, minColStds[jj]*4.5) #threshold is 4.5 * the standard deviation of the lowest entropy box in the row or column
-
-            if entropy(abs(coeffs[int(box[0]):int(box[1]),int(box[2]):int(box[3])].flatten())) > maxRowEs[ii]*0.5:
-                for i in range(int(box[0]),int(box[1])):
-                    for j in range(int(box[2]),int(box[3])):
+            if boxSDs[ii,jj] < np.max(maxRowSDs)*SDthreshold:
+                for i in range(int(boxCos[ii,jj,0]),int(boxCos[ii,jj,1])):
+                    for j in range(int(boxCos[ii,jj,2]),int(boxCos[ii,jj,3])):
                         if coeffs[i,j] < thres:
                             coeffs[i,j] *= softness
 
@@ -214,12 +216,14 @@ def thresholdPartial(signal, wavelet='dmey', levels=5):
 
     return signal, specGraphBoxes
 
-sampleRate, signal = wave.read('recordings/cat.wav') # possum.wav works well Haar or dmey, 5, partial, thres=96*4.5
+sampleRate, signal = wave.read('recordings/original/cat.wav') # possum.wav works well Haar or dmey, 5, partial, thres=96*4.5
 form = signal.dtype
 wavelet = 'dmey'
 print(sampleRate)
 
 level = pywt.dwt_max_level(len(signal), wavelet)
+
+level = 9
 
 print(f"Max level: {level}")
 
