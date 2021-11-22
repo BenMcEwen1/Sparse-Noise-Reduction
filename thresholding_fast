@@ -117,12 +117,12 @@ def thresholdFull(signal, wavelet='dmey', levels=5):
 
     rowVariation = np.array(maxRowSDs)-np.array(minRowSDs)
 
-    SDthreshold = 0.75 #boxes with SD greater than 1/8 of the maximum SD are assumed to be signal and not thresholded
-    SDvariationThres = 0.75 #rows with a SD variation greater than 1/7 of the max with not be thresholded
+    SDthreshold = 1/2 #boxes with SD greater than 1/8 of the maximum SD are assumed to be signal and not thresholded
+    SDvariationThres = 1/2 #rows with a SD variation greater than 1/7 of the max with not be thresholded
 
     for ii, row in enumerate(boxCos):
         
-        thres = minRowSDs[ii]*4.5 #threshold is 4.5 * SD of the lowest SD box in the row
+        thres = minRowSDs[ii]*8.5 #threshold is 4.5 * SD of the lowest SD box in the row
         softness = 0.1
         if rowVariation[ii] < max(rowVariation)*SDvariationThres:
             thres = thres*0.5
@@ -216,7 +216,7 @@ def thresholdPartial(signal, wavelet='dmey', levels=5):
 
     return signal, specGraphBoxes
 
-sampleRate, signal = wave.read('recordings/original/cat.wav') # possum.wav works well Haar or dmey, 5, partial, thres=96*4.5
+sampleRate, signal = wave.read('recordings/original/possum_fight1.wav') # possum.wav works well Haar or dmey, 5, partial, thres=96*4.5
 form = signal.dtype
 wavelet = 'dmey'
 print(sampleRate)
