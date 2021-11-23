@@ -5,11 +5,13 @@ import matplotlib.pyplot as plt
 import os
 
 
-filename = 'downsampled/stoat16k' # Careful! signal and reference must have the same sample rates
+filename = 'downsampled/field16k' # Careful! signal and reference must have the same sample rates
 
 sampleRate, s = wave.read(f'recordings/{filename}.wav')
 
-directory = 'reference/original'
+print(len(s))
+
+directory = 'reference/new'
 
 
 def extract(directory):
@@ -85,7 +87,7 @@ def correlation(recording, masks, sampleRate):
     return scaled
 
 
-def dilation(recommend, k=20):
+def dilation(recommend, k=100):
     # Expand binary mask to include surrounding areas
     d = []
     for i in range(len(recommend)):
@@ -96,7 +98,7 @@ def dilation(recommend, k=20):
     return d
 
 
-def findRegions(correlation, threshold=0.2):
+def findRegions(correlation, threshold=0.4):
     # Find the regions of interest
     regions = []
     for cor in correlation:
@@ -146,9 +148,10 @@ def save(signal, sampleRate, stamp, filename):
 
 def rank(correlation, stamps, calls):
     # Rank in order of highest correlation
+    factor = 0.00021875
+
     rs = []
     for i,stamp in enumerate(stamps):
-
         # If length of list is odd add timestamp to end
         if (len(stamp) % 2):
             stamp.append(len(correlation[i]))
@@ -158,9 +161,8 @@ def rank(correlation, stamps, calls):
         for j in range(0,len(stamp),2):
             
             maxCorrelation = max(cor[int(stamp[j]):int(stamp[j+1])])
-            r.append((calls[i], (stamp[j],stamp[j+1]), maxCorrelation))
-            # print(r)
-        # rs.append(r)
+            r.append((calls[i], (factor*stamp[j],factor*stamp[j+1]), maxCorrelation))
+
         rs.extend(r)
 
     # Order in terms of correlation
@@ -168,6 +170,28 @@ def rank(correlation, stamps, calls):
 
     return rs
 
+
+def combine(rank):
+    # Combine similar recommendations
+    new = []
+
+    for c in rank:
+        tc1 = c[1][0]
+        tc2 = c[1][1]
+
+        for r in rank:
+            if r[0] != c[0]:
+                t1 = r[1][0]
+                t2 = r[1][1]
+                if ((abs(t1 - tc1) < 0.25) and (t1 < tc1)):
+                    tc1 = t1
+                if ((abs(t2 - tc2) < 0.25) and (t2 > tc2)):
+                    tc2 = t2
+        
+        new.append(([c[0]], (tc1,tc2), [c[2]]))
+
+    return new
+        
 
 # Extract masks
 masks, calls = extract(directory)
@@ -184,7 +208,7 @@ cor = correlation(s, masks, sampleRate)
 # Extract regions of interest
 regions = findRegions(cor)
 
-seg = segment(cor, regions)
+# seg = segment(cor, regions)
 # for i,s in enumerate(seg):
 #     print(calls[i])
 #     plt.plot(s)
@@ -196,4 +220,6 @@ stamp = extractTimeStamp(regions, sampleRate)
 # Display correlation/rank with relevant label and time stamp
 r = rank(cor, stamp, calls)
 
-print(r)
+# Recommendations in similar time ranges are combined
+c = combine(r)
+print(c)

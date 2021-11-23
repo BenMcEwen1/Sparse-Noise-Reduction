@@ -13,6 +13,9 @@ This method uses wavelet Packet Decomposition for noise reduction and compares t
 - [x] Rank recommendations in order of highest correlation
 - [x] Bug fix: case where there is an od number of time stamps
 
-- [ ] Generate more masks (unique call types and noise)
+- [x] Generate more masks (unique call types and noise)
 - [ ] Integrate with wavelet denoising 
-- [ ] convert samples to timestamp to segment real time-domain signal
+- [x] convert samples to timestamp to segment real time-domain signal
+- [ ] Check for overlapping recommendation and combine
+  - [x] Combine similar time stamps
+  - [ ] Combine call and correlation labels relating to time stamp
