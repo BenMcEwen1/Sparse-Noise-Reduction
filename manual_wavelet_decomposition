@@ -3,15 +3,50 @@
 
 import numpy as np
 import pywt
-from math import sqrt, floor
+from math import sqrt, floor, ceil
 from scipy.signal import chirp
 import matplotlib.pyplot as plt
 from copy import deepcopy as dcopy
+import scipy.io.wavfile as wave
 
 
-def pad(signal,wavelet,mode):
-    ###### not currently working properly
+def pad(signal, wavelet, mode):
     #pad signal with additional values so that it is divisible by 2
+    #add values to signal so that signal length is 2^n
+
+    n = ceil(np.log10(len(signal))/np.log10(2))
+
+    padded = dcopy(list(signal))
+
+    if mode in ['per','periodic','peroidization']:
+        for i in range(2**n-len(signal)):
+            padded.append(signal[i]) #padding signal as if it is periodic
+
+    elif mode in ['zero','zeros']:
+        for i in range(2**n-len(signal)):
+            padded.append(signal[i]) #padding signal as if it is zero outside time range
+
+    else: 
+        print(f"Mode '{mode}' not found")
+        return None
+
+    if 2**n-len(signal):
+        print(f'Padded signal of length {len(signal)} with {2**n-len(signal)} values')
+
+    return padded
+
+
+def unpad(padded, signal, wavelet, mode):
+    #remove extra values from padded signal
+
+    print(f'Removed {len(padded)-len(signal)} padding values from reconstructed signal')
+    padded = padded[:len(signal)]
+
+    return padded
+
+
+def pad2(signal,wavelet,mode):
+    ###### not currently working properly
     #padding also affects the discrete and approximate coefficients if the filter is longer than 2
     #(see https://mil.ufl.edu/nechyba/www/eel6562/course_materials/t5.wavelets/intro_dwt.pdf for visualization)
 
@@ -22,29 +57,33 @@ def pad(signal,wavelet,mode):
 
     padded = signal.copy()
 
-    if not len(padded) == 2*floor((signalLen + filterLen - 1)/2): #padding signal - doesn't work the same as pywt...
+    ###############     trying to implement pywt method of padding...
 
-        if mode == 'zero': # padding is added as if signal is zero outside time span
-            while not len(padded) == 2*floor((signalLen + filterLen - 1)/2):
-                if ((2*floor((signalLen + filterLen - 1)/2) - len(padded)) % 2) == 0: #alternate between padding beginning and end of signal until desired length
-                    padded.append(0)
-                else: padded.insert(0, 0)
 
-        elif mode == 'per': # padding is added as if signal is periodic
-            padding = 2*floor((signalLen + filterLen - 1)/2)-len(padded)
-            for i in range(padding):
-                padded.append(padded[i])
+    # if not len(padded) == 2*floor((signalLen + filterLen - 1)/2): #padding signal - doesn't work the same as pywt...
 
-        else: 
-            print(f"Mode '{mode}' not found")
-            return None
+    #     if mode == 'zero': # padding is added as if signal is zero outside time span
+    #         while not len(padded) == 2*floor((signalLen + filterLen - 1)/2):
+    #             if ((2*floor((signalLen + filterLen - 1)/2) - len(padded)) % 2) == 0: #alternate between padding beginning and end of signal until desired length
+    #                 padded.append(0)
+    #             else: padded.insert(0, 0)
 
-        print(f'padded signal from a length of {signalLen} to a length of {len(padded)}')
-        # print(f'padded signal: {padded}')
+    #     elif mode == 'per': # padding is added as if signal is periodic
+    #         padding = 2*floor((signalLen + filterLen - 1)/2)-len(padded)
+    #         for i in range(padding):
+    #             padded.append(padded[i])
+
+    #     else: 
+    #         print(f"Mode '{mode}' not found")
+    #         return None
+
+    #     print(f'padded signal from a length of {signalLen} to a length of {len(padded)}')
+    #     # print(f'padded signal: {padded}')
     return padded
 
 
-def unpad(signal, reconstructed, mode): 
+def unpad2(signal, reconstructed, mode): 
+    #### not currently working
     # remove values in reconstructed signal which emerge from padding
 
     while not len(reconstructed) == len(signal):
@@ -96,15 +135,14 @@ def getFilters(wavelet, inverse=False):
     return lowPass, highPass
 
 
-def decompose(signal, wavelet, mode):
+def decompose(padded, wavelet, mode):
     #decompose signal into approximate and detail coefficients (1 level)
 
     lowPass, highPass = getFilters(wavelet)
 
     filterLen = len(highPass) # high and low pass filters have same length
 
-    signalLen = len(signal)
-    padded = pad(signal,wavelet,mode)
+    signalLen = len(padded)
 
     a = np.zeros(int(len(padded)/2)) #approximate coefficients
     d = np.zeros(len(a)) #detail coefficients
@@ -120,20 +158,16 @@ def decompose(signal, wavelet, mode):
 
 
 def reconstruct(decomposed, signal,wavelet,mode): 
-    #reconstruct original signal from coefficients
+    #reconstruct higher level from approx and detail coefficients of lower level
     
     lowPass, highPass = getFilters(wavelet, inverse=True)
     filterLen = len(highPass) # high and low pass filters have same length
 
-    signalLen = len(signal)
-    padded = pad(signal,wavelet,mode)
-
-
-    interleaved = np.empty(len(padded)) #first interleaf the approximate and detail coefficients
+    interleaved = np.empty(len(decomposed[0])*2) #first interleaf the approximate and detail coefficients
     interleaved[0::2] = decomposed[0] #approximate coeffs
     interleaved[1::2] = decomposed[1] #detail coeffs
 
-    reconstructed = np.zeros(len(padded))
+    reconstructed = np.zeros(len(decomposed[0])*2)
 
     for i in range(0,len(decomposed[0])*2,2):
         # print(f'I {i}')
@@ -142,15 +176,15 @@ def reconstruct(decomposed, signal,wavelet,mode):
             reconstructed[i] += interleaved[i+j]*lowPass[j]
             reconstructed[i+1] += interleaved[i+j]*highPass[j]
 
-    reconstructed = unpad(signal, reconstructed, mode)
-
     return reconstructed
 
 
 def dwt(signal, level, wavelet, mode, plot=False):
+    #multi-level decomposition
     coeffs = []
 
     approx = dcopy(signal)
+    approx = pad(approx, wavelet, mode) #pad signal for decomposition
 
     for l in range(level):
         print(f'decompose level: {l}')
@@ -161,8 +195,8 @@ def dwt(signal, level, wavelet, mode, plot=False):
 
     # print(f'    Decomposition coefficients: {coeffs}\n')
     
+    #plot signal decompositions
     if plot:
-        #plot signal decompositions
         fig, ax = plt.subplots(len(coeffs)+1)
         fig.suptitle('Signal decompositions')
         ax[0].plot(signal, color='black')
@@ -179,6 +213,7 @@ def dwt(signal, level, wavelet, mode, plot=False):
 
 
 def idwt(coeffs, signal, wavelet, mode, plot=False):
+    #multi-level reconstruction 
 
     for i in range(len(coeffs)-1):
         approx = coeffs[len(coeffs)-1]
@@ -192,7 +227,7 @@ def idwt(coeffs, signal, wavelet, mode, plot=False):
             coeffs[len(coeffs)-2] = reconstruct([approx,detail],signal,wavelet,mode)
         coeffs = coeffs[:len(coeffs)-1] #remove last value of coefficient array
     
-    reconstructed = coeffs[0]
+    reconstructed = unpad(coeffs[0],signal,wavelet,mode)
 
     if plot:
         #plot signal reconstruction
@@ -234,18 +269,21 @@ signal = [56, 40, 8, 24, 48, 48, 40, 16]
 # signal = [59,43,11,27,45,45,37,13]
 
 #chirp test signal
-sampleRate = 100
+sampleRate = 1000
 signalLength = 10 #seconds
 t = np.linspace(0, signalLength, int(sampleRate*signalLength))
 chirpSignal = chirp(t, f0=1, f1=1, t1=5, method='linear')
 noise = np.random.standard_normal(int(sampleRate*signalLength)) * 0.1
 signal = chirpSignal + noise
 
+#possum noise test
+sampleRate, signal = wave.read('recordings/original/PossumNoisy.wav')
+
 
 wavelet = 'db1'
-mode = 'zero'
+mode = 'per'
 
-level = 3
+level = 5
 
 lowPass, highPass = getFilters(wavelet)
     
@@ -258,15 +296,8 @@ multiRes(coeffs,signal,wavelet,mode) #plot multiresolution plot of coeffs
 reconstructed = idwt(coeffs, signal, wavelet, mode, plot=True) #reconstruct original signal from coeffs
 
 
-# #plot signal and reconstructed signal
-# fig, ([ax1, ax2]) = plt.subplots(2)
-# fig.suptitle('Original / Reconstructed signal')
-# ax1.plot(signal,color='black')
-# ax1.plot(signal-noise,color='red')
-# ax2.plot(reconstructed)
-# # plt.show()
-
 # #check method against pywt's discrete wavelet transform:
+
 w = pywt.Wavelet(wavelet)
 print(f'pywt wavelet: {wavelet} \n    Lowpass coefficients: {w.dec_lo}\n    Highpass coefficients: {w.dec_hi} \n')
 decomposed = pywt.dwt(signal,wavelet,mode) 
