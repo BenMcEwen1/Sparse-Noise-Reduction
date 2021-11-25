@@ -10,33 +10,35 @@ from copy import deepcopy as dcopy
 import scipy.io.wavfile as wave
 
 
-def pad(signal, wavelet, mode):
+def pad(signal, level, wavelet, mode):
     #pad signal with additional values so that it is divisible by 2
     #add values to signal so that signal length is 2^n
 
     n = ceil(np.log10(len(signal))/np.log10(2))
 
+    padLen = ceil(len(signal)/2**level) * 2**level #gives minimum length of signal for number of levels
+    padLen -= len(signal) #number of samples to pad signal with
     padded = dcopy(list(signal))
 
     if mode in ['per','periodic','peroidization']:
-        for i in range(2**n-len(signal)):
+        for i in range(padLen):
             padded.append(signal[i]) #padding signal as if it is periodic
 
     elif mode in ['zero','zeros']:
-        for i in range(2**n-len(signal)):
-            padded.append(signal[i]) #padding signal as if it is zero outside time range
+        for i in range(padLen):
+            padded.append(0) #padding signal as if it is zero outside time range
 
     else: 
         print(f"Mode '{mode}' not found")
         return None
 
-    if 2**n-len(signal):
-        print(f'Padded signal of length {len(signal)} with {2**n-len(signal)} values')
+    if padLen:
+        print(f'Padded signal of length {len(signal)} with {padLen} values')
 
     return padded
 
 
-def unpad(padded, signal, wavelet, mode):
+def unpad(padded, signal, level, wavelet, mode):
     #remove extra values from padded signal
 
     print(f'Removed {len(padded)-len(signal)} padding values from reconstructed signal')
@@ -100,13 +102,17 @@ def getFilters(wavelet, inverse=False):
 
     if wavelet == 'haar' or wavelet == 'db1': #haar wavelet / db1 wavelet (same coefficients)
         lowPass = [1/sqrt(2), 1/sqrt(2)] #forward low pass wavelet coefficients
-        if inverse == True:
-            lowPass = list(reversed(lowPass)) #inverse low pass wavelet coefficients
 
-    elif wavelet == 'db2':
-        lowPass = [(1-sqrt(3))/(4*sqrt(2)), (3-sqrt(3))/(4*sqrt(2)), (3+sqrt(3))/(4*sqrt(2)), (1+sqrt(3))/(4*sqrt(2))]
-        if inverse == True:
-            lowPass = list(reversed(lowPass)) #inverse low pass wavelet coefficients
+    elif wavelet == 'db2': #daubechies 2 wavelet, length 4 filters.
+        lowPass = [(1+sqrt(3))/(4*sqrt(2)), (3+sqrt(3))/(4*sqrt(2)), (3-sqrt(3))/(4*sqrt(2)), (1-sqrt(3))/(4*sqrt(2))]
+
+    #these values come from: http://wavelets.pybytes.com/wavelet/db3/
+
+    elif wavelet == 'db3': #daubechies 3 wavelet, length 6
+        lowPass = [0.3326705530,0.8068915093,0.4598775021,-0.1350110200,-0.0854412739,0.0352262919]
+
+    elif wavelet == 'sym2': #symlets 2, length 4
+        lowPass = [0.4829629131,0.8365163037,0.2241438680,-0.1294095226]
 
     elif wavelet == 'halves': #wavelet used in example slide 4/98: https://www.math.aau.dk/digitalAssets/120/120646_r-2003-24.pdf
         lowPass = [1/2, 1/2]
@@ -117,25 +123,28 @@ def getFilters(wavelet, inverse=False):
         print(f'Filter {wavelet} not found.')
         return None
 
-    highPass = []
-    for i in range(len(lowPass)): #highpass filter can be constructed from lowpass filter according to: https://mil.ufl.edu/nechyba/www/eel6562/course_materials/t5.wavelets/intro_dwt.pdf
-            j = len(lowPass)-1-i
-            if inverse==False:
-                if (i % 2):
-                    highPass.append(-lowPass[j])
-                else:
-                    highPass.append(lowPass[j])
+    if inverse == True: # inverse wavelet coefficients are related to forward coefficients:
+        temp = []
+        for k in range(len(lowPass)):
+            if k%2:
+                temp.append(lowPass[k])
+            else:
+                temp.append(lowPass[len(lowPass)-2-k]) #this formula is eqn.7 on the the wavelet tutorial document.
+        lowPass = temp
 
-            elif inverse==True: #highpass filter is constructed from lowpass for inverse transform:
-                if (i % 2):
-                    highPass.append(-lowPass[j])
-                else:
-                    highPass.append(lowPass[j])
+    highPass = []
+    #highpass filter can be constructed from lowpass filter according to: https://mil.ufl.edu/nechyba/www/eel6562/course_materials/t5.wavelets/intro_dwt.pdf
+    for i in range(len(lowPass)):
+        j = len(lowPass)-1-i
+        if (i % 2):
+            highPass.append(-lowPass[j])
+        else:
+            highPass.append(lowPass[j])
 
     return lowPass, highPass
 
 
-def decompose(padded, wavelet, mode):
+def decompose(padded, signalLen, wavelet, mode):
     #decompose signal into approximate and detail coefficients (1 level)
 
     lowPass, highPass = getFilters(wavelet)
@@ -149,15 +158,25 @@ def decompose(padded, wavelet, mode):
 
     # print(f'n = {np.log10(signalLen)/np.log10(2)} where signal length = 2^n\n')
 
+    # for i in range(0,signalLen,2): # step size of 2 results in a and d having 1/2 the length of signal
+    #     for j in range(filterLen):
+    #         a[int(i/2)] += padded[i+j]*lowPass[j] #lowpass decomposition
+    #         d[int(i/2)] += padded[i+j]*highPass[j] #highpass decomposition
+
     for i in range(0,signalLen,2): # step size of 2 results in a and d having 1/2 the length of signal
         for j in range(filterLen):
-            a[int(i/2)] += padded[i+j]*lowPass[j] #lowpass reconstruction
-            d[int(i/2)] += padded[i+j]*highPass[j] #highpass reconstruction
+            if (i+j) < len(padded):
+                a[int(i/2)] += padded[i+j]*lowPass[j] #lowpass decomposition
+                d[int(i/2)] += padded[i+j]*highPass[j] #highpass decomposition
+            else:
+                k = i+j-signalLen
+                a[int(i/2)] += padded[k]*lowPass[j] #lowpass decomposition
+                d[int(i/2)] += padded[k]*highPass[j] #highpass decomposition
     
     return (a, d)
 
 
-def reconstruct(decomposed, signal,wavelet,mode): 
+def reconstruct(decomposed, signalLen,wavelet,mode): 
     #reconstruct higher level from approx and detail coefficients of lower level
     
     lowPass, highPass = getFilters(wavelet, inverse=True)
@@ -173,9 +192,15 @@ def reconstruct(decomposed, signal,wavelet,mode):
         # print(f'I {i}')
         for j in range(filterLen):
             # print(f'j {j}')
-            reconstructed[i] += interleaved[i+j]*lowPass[j]
-            reconstructed[i+1] += interleaved[i+j]*highPass[j]
 
+            k = i+j-filterLen+2 #in the inverse transform, the first filter is placed as shown in tutorial document
+
+            if (i+j-filterLen+2) > len(interleaved):
+                k -= signalLen
+                
+            reconstructed[i] += interleaved[k]*lowPass[j] #lowpass reconstruction
+            reconstructed[i+1] += interleaved[k]*highPass[j] #highpass reconstruction
+    
     return reconstructed
 
 
@@ -184,11 +209,11 @@ def dwt(signal, level, wavelet, mode, plot=False):
     coeffs = []
 
     approx = dcopy(signal)
-    approx = pad(approx, wavelet, mode) #pad signal for decomposition
+    approx = pad(approx, level, wavelet, mode) #pad signal for decomposition
 
     for l in range(level):
         print(f'decompose level: {l}')
-        [approx, detail] = decompose(approx, wavelet, mode) #get coeffs of single level decomposition
+        [approx, detail] = decompose(approx, len(signal), wavelet, mode) #get coeffs of single level decomposition
         coeffs.append(detail)
     
     coeffs.append(approx)
@@ -214,6 +239,7 @@ def dwt(signal, level, wavelet, mode, plot=False):
 
 def idwt(coeffs, signal, wavelet, mode, plot=False):
     #multi-level reconstruction 
+    level = len(coeffs)-1
 
     for i in range(len(coeffs)-1):
         approx = coeffs[len(coeffs)-1]
@@ -221,13 +247,16 @@ def idwt(coeffs, signal, wavelet, mode, plot=False):
 
         # print(f'reconstruct level: {i}')
 
-        if (len(coeffs) - 3) >= 0: #for determining the appropriate 'higher level' signal to base reconstruction on
-            coeffs[len(coeffs)-2] = reconstruct([approx,detail],coeffs[len(coeffs)-3],wavelet,mode)
+        if (len(coeffs) - 3) >= 0: #for determining the appropriate 'higher level' signal length to base reconstruction on
+            signalLen = len(coeffs[len(coeffs)-3])
         else:
-            coeffs[len(coeffs)-2] = reconstruct([approx,detail],signal,wavelet,mode)
+            signalLen = len(signal)
+        
+        coeffs[len(coeffs)-2] = reconstruct([approx,detail],signalLen,wavelet,mode) #reconstruct higher level from coeffs
+
         coeffs = coeffs[:len(coeffs)-1] #remove last value of coefficient array
-    
-    reconstructed = unpad(coeffs[0],signal,wavelet,mode)
+
+    reconstructed = unpad(coeffs[0],signal, level, wavelet,mode)
 
     if plot:
         #plot signal reconstruction
@@ -265,25 +294,25 @@ def multiRes(coeffs,signal,wavelet,mode):
     plt.show()
 
 
-signal = [56, 40, 8, 24, 48, 48, 40, 16]
+signal = [56, 40, 8, 24, 48, 48, 40, 16, 11]
 # signal = [59,43,11,27,45,45,37,13]
 
 #chirp test signal
-sampleRate = 1000
+sampleRate = 100
 signalLength = 10 #seconds
 t = np.linspace(0, signalLength, int(sampleRate*signalLength))
 chirpSignal = chirp(t, f0=1, f1=1, t1=5, method='linear')
-noise = np.random.standard_normal(int(sampleRate*signalLength)) * 0.1
-signal = chirpSignal + noise
+noise = np.random.standard_normal(int(sampleRate*signalLength)) * 0
+# signal = chirpSignal + noise
 
 #possum noise test
-sampleRate, signal = wave.read('recordings/original/PossumNoisy.wav')
+# sampleRate, signal = wave.read('recordings/original/PossumNoisy.wav')
 
 
-wavelet = 'db1'
+wavelet = 'sym2'
 mode = 'per'
 
-level = 5
+level = 2 # careful - no catch for setting maximum level yet
 
 lowPass, highPass = getFilters(wavelet)
     
@@ -298,17 +327,17 @@ reconstructed = idwt(coeffs, signal, wavelet, mode, plot=True) #reconstruct orig
 
 # #check method against pywt's discrete wavelet transform:
 
-w = pywt.Wavelet(wavelet)
-print(f'pywt wavelet: {wavelet} \n    Lowpass coefficients: {w.dec_lo}\n    Highpass coefficients: {w.dec_hi} \n')
-decomposed = pywt.dwt(signal,wavelet,mode) 
-# print(f'    Approximate coeffs: {decomposed[0]}\n    Detail coeffs: {decomposed[1]}\n')
-reconstructed = pywt.idwt(decomposed[0], decomposed[1], wavelet, mode)
+# w = pywt.Wavelet(wavelet)
+# print(f'pywt wavelet: {wavelet} \n    Lowpass coefficients: {w.dec_lo}\n    Highpass coefficients: {w.dec_hi} \n')
+# decomposed = pywt.dwt(signal,wavelet,mode) 
+# # print(f'    Approximate coeffs: {decomposed[0]}\n    Detail coeffs: {decomposed[1]}\n')
+# reconstructed = pywt.idwt(decomposed[0], decomposed[1], wavelet, mode)
 
-#plot pywt signal and reconstructed signal
-fig, ([ax1, ax2]) = plt.subplots(2)
-fig.suptitle('PYWT Original / Reconstructed signal')
-ax1.plot(signal,color='black')
-# ax1.plot(signal-noise,color='red')
-ax2.plot(reconstructed)
+# #plot pywt signal and reconstructed signal
+# fig, ([ax1, ax2]) = plt.subplots(2)
+# fig.suptitle('PYWT Original / Reconstructed signal')
+# ax1.plot(signal,color='black')
+# # ax1.plot(signal-noise,color='red')
+# ax2.plot(reconstructed)
 
 plt.show()
