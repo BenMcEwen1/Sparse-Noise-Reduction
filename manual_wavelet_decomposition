@@ -113,6 +113,11 @@ def getFilters(wavelet, inverse=False):
 
     elif wavelet == 'sym2': #symlets 2, length 4
         lowPass = [0.4829629131,0.8365163037,0.2241438680,-0.1294095226]
+    
+    elif wavelet in pywt.wavelist(kind='discrete'): # get filter for other wavelets from pywt filterbanks
+        w = pywt.Wavelet(wavelet)
+        lowPass = w.dec_lo
+        lowPass.reverse() # wavelets in pywt seem to be reversed
 
     elif wavelet == 'halves': #wavelet used in example slide 4/98: https://www.math.aau.dk/digitalAssets/120/120646_r-2003-24.pdf
         lowPass = [1/2, 1/2]
@@ -303,16 +308,16 @@ signalLength = 10 #seconds
 t = np.linspace(0, signalLength, int(sampleRate*signalLength))
 chirpSignal = chirp(t, f0=1, f1=1, t1=5, method='linear')
 noise = np.random.standard_normal(int(sampleRate*signalLength)) * 0
-# signal = chirpSignal + noise
+signal = chirpSignal + noise
 
 #possum noise test
-# sampleRate, signal = wave.read('recordings/original/PossumNoisy.wav')
+sampleRate, signal = wave.read('recordings/original/PossumNoisy.wav')
 
 
-wavelet = 'sym2'
+wavelet = 'db6'
 mode = 'per'
 
-level = 2 # careful - no catch for setting maximum level yet
+level = 5 # careful - no catch for setting maximum level yet
 
 lowPass, highPass = getFilters(wavelet)
     
