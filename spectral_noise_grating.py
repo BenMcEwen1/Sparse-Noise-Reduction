@@ -7,8 +7,6 @@ import numpy as np
 import librosa
 from scipy.signal import spectrogram, istft, fftconvolve
 
-recording, sample_rate = librosa.load('./recordings/downsampled/field16k.wav', sr=None)
-noise, sample_rate = librosa.load('./recordings/downsampled/noise16k.wav', sr=None)
 
 def plot_spectrogram(signal, title):
     fig, ax = plt.subplots(figsize=(20, 4))
@@ -67,6 +65,35 @@ def threshold(noise_stft_db, n=2):
     return thresh
 
 
+def autoThreshold(sig_stft_db, window=50, step=25, n=2.0):
+    thres = []
+
+    # Find threshold for each frequency band
+    for j,row in enumerate(sig_stft_db):
+        min_std = 1000
+        min_mean = 0
+        min_index = 0
+
+        for i in range(0,len(row),step):
+            mean = np.mean(row[i:i+window])
+            std = np.std(row[i:i+window])
+
+            if std < min_std:
+                min_std = std
+                min_mean = mean
+                min_index = i
+        
+        t = min_mean + min_std * n
+        thres.append(t)
+
+    # Reshape and extend mask across full recording
+    reshaped = np.reshape(thres, (1,len(thres)))
+    repeats = np.shape(sig_stft_db)[1]
+    thres = np.repeat(reshaped, repeats, axis=0).T
+
+    return thres
+
+
 def mask(db_thresh, sig_stft, sig_stft_db):
     # Smoothing filter and normalise
     smooth = np.ones((5,9)) * 0.5
@@ -87,7 +114,7 @@ def mask(db_thresh, sig_stft, sig_stft_db):
     return masked, mask
 
 
-def reconstruct(masked, recoridng):
+def reconstruct(masked, recording):
     reconstructed = convertToDB(abs(convertToAmp(masked)))
     original = convertToDB(abs(STFT(recording, n_fft, hop_length, win_length)))
 
@@ -95,15 +122,15 @@ def reconstruct(masked, recoridng):
 
 
 
-noise_stft, noise_stft_db = spectrogram(noise)
-sig_stft, sig_stft_db = spectrogram(recording)
+# noise_stft, noise_stft_db = spectrogram(noise)
+# sig_stft, sig_stft_db = spectrogram(recording)
 
-db_thresh = threshold(noise_stft_db)
+# db_thresh = threshold(noise_stft_db)
 
-masked, mask = mask(db_thresh, sig_stft, sig_stft_db)
+# masked, mask = mask(db_thresh, sig_stft, sig_stft_db)
 
-reconstructed, original = reconstruct(masked, recording)
+# reconstructed, original = reconstruct(masked, recording)
 
-# Original and denoised
-plot_spectrogram(original, title="Original spectrogram")
-plot_spectrogram(reconstructed, title="Reconstructed spectrogram")
+# # Original and denoised
+# plot_spectrogram(original, title="Original spectrogram")
+# plot_spectrogram(reconstructed, title="Reconstructed spectrogram")
