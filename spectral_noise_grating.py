@@ -44,7 +44,7 @@ win_length = 2048
 hop_length = 512
 
 
-def sectrogram(signal):
+def spectrogram(signal):
     # Generate spectrogram and convert to db
     stft = STFT(signal, n_fft, hop_length, win_length)
     stft_db = convertToDB(abs(stft))
@@ -95,8 +95,8 @@ def reconstruct(masked, recoridng):
 
 
 
-noise_stft, noise_stft_db = sectrogram(noise)
-sig_stft, sig_stft_db = sectrogram(recording)
+noise_stft, noise_stft_db = spectrogram(noise)
+sig_stft, sig_stft_db = spectrogram(recording)
 
 db_thresh = threshold(noise_stft_db)
 
