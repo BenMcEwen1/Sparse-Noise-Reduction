@@ -58,7 +58,6 @@ def idwt(coeffs, signal, wavelet):
 
     # Pad Interleaved
     L = len(highPass)
-    print(L)
     interleaved = np.append(interleaved, [1]*L)
 
     # Pad Reconstruction
@@ -146,9 +145,9 @@ reconstructed = partialReconstruct(coeffs, signal, wavelet)
 print(len(signal))
 print(len(reconstructed))
 
-L = 150
-reconstructed = reconstructed[0:-L]
-reconstructed = np.append([1]*L,reconstructed)
+# L = 150
+# reconstructed = reconstructed[0:-L]
+# reconstructed = np.append([1]*L,reconstructed)
 
 plt.plot(signal)
 plt.plot(reconstructed)
