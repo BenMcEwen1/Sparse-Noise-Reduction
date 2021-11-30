@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import soundfile as sf
 
 
-recording, sample_rate = librosa.load('./recordings/downsampled/field16k.wav', sr=None)
+recording, sample_rate = librosa.load('./recordings/downsampled/stoat16k.wav', sr=None)
 
 sig_stft, sig_stft_db = spectrogram(recording)
 

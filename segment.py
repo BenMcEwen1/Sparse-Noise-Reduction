@@ -78,9 +78,6 @@ def correlation(recording, masks, sampleRate):
         cor.append(c[0])
 
     # Scale correlation relative to upper and lower values
-    lower = 0
-    upper = 0.0005
-
     for c in cor:
         c = np.interp(c, (lower,upper), (0,1)) 
         scaled.append(c)
@@ -88,7 +85,7 @@ def correlation(recording, masks, sampleRate):
     return scaled
 
 
-def dilation(recommend, k=100):
+def dilation(recommend, k=200):
     # Expand binary mask to include surrounding areas
     d = []
     for i in range(len(recommend)):
@@ -99,7 +96,7 @@ def dilation(recommend, k=100):
     return d
 
 
-def findRegions(correlation, threshold=0.4):
+def findRegions(correlation, threshold=0.3):
     # Find the regions of interest
     regions = []
     for cor in correlation:
@@ -149,7 +146,7 @@ def save(signal, sampleRate, stamp, filename):
 
 def rank(correlation, stamps, calls):
     # Rank in order of highest correlation
-    factor = 0.00021875
+    factor = 226 #0.00021875
 
     rs = []
     for i,stamp in enumerate(stamps):
@@ -172,7 +169,7 @@ def rank(correlation, stamps, calls):
     return rs
 
 
-def combine(rank):
+def combine(rank, lim=30000):
     # Combine similar recommendations
     new = []
 
@@ -184,43 +181,53 @@ def combine(rank):
             if r[0] != c[0]:
                 t1 = r[1][0]
                 t2 = r[1][1]
-                if ((abs(t1 - tc1) < 0.25) and (t1 < tc1)):
+                if ((abs(t1 - tc1) < lim) and (t1 < tc1)):
                     tc1 = t1
-                if ((abs(t2 - tc2) < 0.25) and (t2 > tc2)):
+                if ((abs(t2 - tc2) < lim) and (t2 > tc2)):
                     tc2 = t2
         
         new.append(([c[0]], (tc1,tc2), [c[2]]))
 
-    return new
+    unique = []
+
+    for n in new:
+        time = n[1]
+        if time not in unique:
+            unique.append(time)
+
+    calls = [1]*len(unique)
+    for n in new:
+        call = n[0]
+        time = n[1]
+        i = unique.index(time)
+        calls[i] = call
+
+    return unique, calls
         
 
-# # Extract masks
-# masks, calls = extract(directory)
+# Extract masks
+masks, calls = extract(directory)
 
-# # For a given field recording and array of masks generate array of correlations
-# cor = correlation(s, masks, sampleRate)
+# For a given field recording and array of masks generate array of correlations
+cor = correlation(s, masks, sampleRate)
 
-# # for i,c in enumerate(cor):
-# #     print(calls[i])
-# #     plt.plot(c)
-# #     plt.ylim([0,1.1])
-# #     plt.show()
+# Extract regions of interest
+regions = findRegions(cor)
 
-# # Extract regions of interest
-# regions = findRegions(cor)
+# Extract time stamps
+stamp = extractTimeStamp(regions, sampleRate)
 
-# # seg = segment(cor, regions)
-# # for i,s in enumerate(seg):
-# #     print(calls[i])
-# #     plt.plot(s)
-# #     plt.show()
+# Display correlation/rank with relevant label and time stamp
+r = rank(cor, stamp, calls)
 
-# # Extract time stamps
-# stamp = extractTimeStamp(regions, sampleRate)
+# Recommendations in similar time ranges are combined
+unique, calls = combine(r)
 
-# # Display correlation/rank with relevant label and time stamp
-# r = rank(cor, stamp, calls)
-
-# # Recommendations in similar time ranges are combined
-# c = combine(r)
-# print(c)
+plt.plot(s)
+for i,seg in enumerate(unique):
+    t1 = seg[0]
+    t2 = seg[1]
+    colour = (0.5,(i)/len(unique),0)
+    plt.axvspan(t1, t2, color=colour, alpha=0.2, label=calls[i]) 
+    plt.legend()
+plt.show()
