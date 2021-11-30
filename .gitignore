@@ -1,7 +1,6 @@
 .vscode/
 *.env
 __pycache__
-/reference
 /denoised
 /other
 /old

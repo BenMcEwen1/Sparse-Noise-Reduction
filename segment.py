@@ -9,8 +9,6 @@ filename = 'downsampled/field16k' # Careful! signal and reference must have the 
 
 sampleRate, s = wave.read(f'recordings/{filename}.wav')
 
-print(len(s))
-
 directory = 'reference/new'
 
 
@@ -80,6 +78,9 @@ def correlation(recording, masks, sampleRate):
         cor.append(c[0])
 
     # Scale correlation relative to upper and lower values
+    lower = 0
+    upper = 0.0005
+
     for c in cor:
         c = np.interp(c, (lower,upper), (0,1)) 
         scaled.append(c)
@@ -193,33 +194,33 @@ def combine(rank):
     return new
         
 
-# Extract masks
-masks, calls = extract(directory)
+# # Extract masks
+# masks, calls = extract(directory)
 
-# For a given field recording and array of masks generate array of correlations
-cor = correlation(s, masks, sampleRate)
+# # For a given field recording and array of masks generate array of correlations
+# cor = correlation(s, masks, sampleRate)
 
-# for i,c in enumerate(cor):
-#     print(calls[i])
-#     plt.plot(c)
-#     plt.ylim([0,1.1])
-#     plt.show()
+# # for i,c in enumerate(cor):
+# #     print(calls[i])
+# #     plt.plot(c)
+# #     plt.ylim([0,1.1])
+# #     plt.show()
 
-# Extract regions of interest
-regions = findRegions(cor)
+# # Extract regions of interest
+# regions = findRegions(cor)
 
-# seg = segment(cor, regions)
-# for i,s in enumerate(seg):
-#     print(calls[i])
-#     plt.plot(s)
-#     plt.show()
+# # seg = segment(cor, regions)
+# # for i,s in enumerate(seg):
+# #     print(calls[i])
+# #     plt.plot(s)
+# #     plt.show()
 
-# Extract time stamps
-stamp = extractTimeStamp(regions, sampleRate)
+# # Extract time stamps
+# stamp = extractTimeStamp(regions, sampleRate)
 
-# Display correlation/rank with relevant label and time stamp
-r = rank(cor, stamp, calls)
+# # Display correlation/rank with relevant label and time stamp
+# r = rank(cor, stamp, calls)
 
-# Recommendations in similar time ranges are combined
-c = combine(r)
-print(c)
+# # Recommendations in similar time ranges are combined
+# c = combine(r)
+# print(c)

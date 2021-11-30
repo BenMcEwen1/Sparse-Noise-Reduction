@@ -6,6 +6,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 import librosa
 from scipy.signal import spectrogram, istft, fftconvolve
+import soundfile as sf
+
+n_fft = 2048
+win_length = 2048
+hop_length = 512
+
+
+def STFT(y, n_fft, hop_length, win_length):
+    return librosa.stft(y=y, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
+
+
+def convertToDB(x):
+    return librosa.core.amplitude_to_db(x, ref=1.0, amin=1e-20, top_db=80.0)
+
+
+def convertToAmp(x,):
+    return librosa.core.db_to_amplitude(x, ref=1.0)
+
+
+def ISTFT(y, step=hop_length, window=win_length):
+    return librosa.istft(y, step, window)
 
 
 def plot_spectrogram(signal, title):
@@ -16,30 +37,12 @@ def plot_spectrogram(signal, title):
         aspect="auto",
         cmap=plt.cm.seismic,
         vmin=-1 * np.max(np.abs(signal)),
-        vmax=np.max(np.abs(signal)),
-    )
+        vmax=np.max(np.abs(signal)))
+
     fig.colorbar(cax)
     ax.set_title(title)
     plt.tight_layout()
     plt.show()
-
-def STFT(y, n_fft, hop_length, win_length):
-    return librosa.stft(y=y, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
-
-def convertToDB(x):
-    return librosa.core.amplitude_to_db(x, ref=1.0, amin=1e-20, top_db=80.0)
-
-def convertToAmp(x,):
-    return librosa.core.db_to_amplitude(x, ref=1.0)
-
-def ISTFT(y, hop_length, win_length):
-    return librosa.istft(y, hop_length, win_length)
-
-
-# STFT over signal
-n_fft = 2048
-win_length = 2048
-hop_length = 512
 
 
 def spectrogram(signal):
@@ -50,7 +53,7 @@ def spectrogram(signal):
     return stft, stft_db
 
 
-def threshold(noise_stft_db, n=2):
+def threshold(noise_stft_db, n=2.0):
     # Calculate statistics of noise
     mean_freq_noise = np.mean(noise_stft_db, axis=1)
     std_freq_noise = np.std(noise_stft_db, axis=1)
@@ -65,7 +68,7 @@ def threshold(noise_stft_db, n=2):
     return thresh
 
 
-def autoThreshold(sig_stft_db, window=50, step=25, n=2.0):
+def autoThreshold(sig_stft_db, window=50, step=25, n=1.5):
     thres = []
 
     # Find threshold for each frequency band
@@ -122,6 +125,9 @@ def reconstruct(masked, recording):
 
 
 
+# recording, sample_rate = librosa.load(f'./recordings/downsampled/field16k.wav', sr=None)
+# noise, sample_rate = librosa.load(f'./recordings/downsampled/noise16k.wav', sr=None)
+
 # noise_stft, noise_stft_db = spectrogram(noise)
 # sig_stft, sig_stft_db = spectrogram(recording)
 
@@ -130,6 +136,9 @@ def reconstruct(masked, recording):
 # masked, mask = mask(db_thresh, sig_stft, sig_stft_db)
 
 # reconstructed, original = reconstruct(masked, recording)
+
+# denoised = ISTFT(reconstructed)
+# sf.write('./segmented/denoised2.wav', denoised, sample_rate)
 
 # # Original and denoised
 # plot_spectrogram(original, title="Original spectrogram")

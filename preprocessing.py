@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import os
 
 
-
 def normalise(filename):
     # Normalise signal
     sampleRate, recording = wave.read(f'recordings/{filename}.wav')
@@ -40,11 +39,4 @@ def generateRef(filename, name):
     np.save(f'reference/new/{name}.npy', Sr)
     print('Reference saved')
 
-generateRef('ref/new/possum_snip', 'possum')
-
-# White noise
-# w = np.ones((129,30)) * 100
-# np.save(f'reference/normalised/white100.npy', w)
-
-# l = np.load('./reference/new/screech.npy')
-# print(l.shape)
+# generateRef('ref/new/possum_snip', 'possum')
