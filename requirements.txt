@@ -1,0 +1,7 @@
+python>=3.8.0
+librosa==0.8.1
+matplotlib==3.3.2
+numpy==1.19.5
+pysoundfile==0.10.3
+pywavelets==1.1.1
+scipy==1.7.1

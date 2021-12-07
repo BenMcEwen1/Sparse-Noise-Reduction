@@ -5,6 +5,10 @@ Annotation tool to recommend regions of recordings likely to contain target audi
 This method uses wavelet Packet Decomposition for noise reduction and compares to reference packets
 
 
+## Installation
+```pip install -r requirements.txt```
+
+
 ## Things to do
 Pre-processing
 - [x] Run initial checks: sampling rate = 16kHz, monochannel, normalised (maybe)
