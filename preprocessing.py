@@ -2,41 +2,60 @@ import numpy as np
 from scipy import signal
 import scipy.io.wavfile as wave
 import matplotlib.pyplot as plt
-import os
+
+class process:
+    # Methods for preprocessing audio field recordings
+
+    def __init__(self, directory):
+        self.sampleRate, self.recording = self.load(directory)
 
 
-def normalise(filename):
-    # Normalise signal
-    sampleRate, recording = wave.read(f'recordings/{filename}.wav')
-
-    recording = (recording - np.mean(recording)) / np.std(recording)
-    
-    wave.write(f'recordings/{filename}_norm.wav', sampleRate, recording)
-
-# normalise('noise_downsampled')
+    @staticmethod
+    def load(directory):
+        # Load recording
+        sampleRate, recording = wave.read(f'{directory}.wav')
+        return sampleRate, recording
 
 
-def downSample(recording, sampleRate, rate=16000):
-    # Down sample audio files to 16kHz
-    if sampleRate != rate:
-        N = round((len(recording) * rate)/ sampleRate)
-        recording = signal.resample(recording, N)
-        print(f'Audio downsampled to {rate}')
+    def normalise(self, directory, write=False):
+        # Normalise signal
+        self.recording = (self.recording - np.mean(self.recording)) / np.std(self.recording)
 
-    return recording
+        if write:
+            wave.write(f'{directory}.wav', self.sampleRate, self.recording)
 
-# downSample('possum')
+        print('Audio normalised')
 
 
-def generateRef(filename, name):
-    # Save reference spectrogram as .npy file
-    sampleRate, ref = wave.read(f'recordings/{filename}.wav')
+    def downSample(self, rate=16000):
+        # Down sample audio files
+        if self.sampleRate != rate:
+            N = round((len(self.recording) * rate)/ self.sampleRate)
+            self.recording = signal.resample(self.recording, N)
+            self.sampleRate = rate
+            print(f'Audio downsampled to {rate}')
 
-    # ref = downSample(ref, sampleRate)
 
-    fr, tr, Sr = signal.spectrogram(ref, fs=sampleRate)
+    def generateRef(self, directory, downSample=False):
+        # Save reference spectrogram as .npy file
+        if downSample:
+            self.downSample()
 
-    np.save(f'reference/new/{name}.npy', Sr)
-    print('Reference saved')
+        fr, tr, Sr = signal.spectrogram(self.recording, fs=self.sampleRate)
 
-# generateRef('ref/new/possum_snip', 'possum')
+        np.save(f'{directory}.npy', Sr)
+        print('Reference saved')
+
+
+    def mono(self):
+        # Check and convert to mono-channel
+        try:
+            if self.recording.shape[1] > 1:
+                print('Converted to mono-channel')
+                return self.recording[:,0]
+        except:
+            return self.recording
+
+
+# directory = './recordings/original/double_channel'
+# r = process(directory)
