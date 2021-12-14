@@ -15,7 +15,7 @@ def denoise(signal,wavelet, level): #partial tree
 
     for i,coeff in enumerate(coeffs):
         if i != 0: # First index is the Approximate node, careful!
-            thres = 100 #override threshold
+            thres = 10 #override threshold
             thres = thres * 4.5 # AviaNZ suggests the std of the lowest packet x4.5
             coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
 
@@ -26,7 +26,7 @@ def denoise(signal,wavelet, level): #partial tree
 
     return denoised
 
-sampleRate, signal = wave.read('recordings/cat.wav') # possum.wav works well Haar, 5, partial, thres=96*4.5
+sampleRate, signal = wave.read('recordings/downsampled/cat16k.wav') # possum.wav works well Haar, 5, partial, thres=96*4.5
 form = signal.dtype
 
 # print((2*np.log2(len(signal)/sampleRate))**0.5)
@@ -34,9 +34,10 @@ form = signal.dtype
 # print(pywt.wavelist(kind='discrete'))
 
 correlations = np.array(['correlation coefficient','mother wavelet'])
+
 for wavelet in pywt.wavelist(kind='discrete'):
     # wavelet = 'dmey'
-    level = 10
+    level = 6
 
     denoised = denoise(signal, wavelet=wavelet, level=level)
 
@@ -51,14 +52,14 @@ print(correlations[np.where(correlations=='dmey')[0]]) #dmey wavelet for compari
 wavelet = correlations[np.where(correlations==max(correlations[1:,0]))[0]][0][1]
 denoised = denoise(signal, wavelet=wavelet, level=level)
 
-plt.figure()
-plt.title('Original/Denoised signal')
-plt.plot(signal)
-plt.plot(denoised)
+# plt.figure()
+# plt.title('Original/Denoised signal')
+# plt.plot(signal)
+# plt.plot(denoised)
 
-fig, (ax1, ax2) = plt.subplots(2)
-fig.suptitle('Original/Denoised Spectrogram')
-ax1.specgram(signal, Fs=sampleRate)
-denoised = np.asarray(denoised, dtype=form) # Downsample
-ax2.specgram(denoised, Fs=sampleRate)
-plt.show()
+# fig, (ax1, ax2) = plt.subplots(2)
+# fig.suptitle('Original/Denoised Spectrogram')
+# ax1.specgram(signal, Fs=sampleRate)
+# denoised = np.asarray(denoised, dtype=form) # Downsample
+# ax2.specgram(denoised, Fs=sampleRate)
+# plt.show()

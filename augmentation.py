@@ -1,15 +1,11 @@
-# Generate data augmentation and synthetic data for a given field recording
-
 import numpy as np
 import scipy.io.wavfile as wave
 import matplotlib.pyplot as plt
 import random
 from spectral_noise_grating import spectrogram, autoThreshold, mask, reconstruct, plot_spectrogram, ISTFT, convertToAmp
 import librosa
-
-directory = './recordings/downsampled/field16k'
-sampleRate, recording = wave.read(f'{directory}.wav')
-_, vocalisation = wave.read('./recordings/downsampled/possum16k.wav')
+import os
+import soundfile as sf
 
 def addNoise(sampleRate, recording):
     # Add guassian noise
@@ -18,16 +14,10 @@ def addNoise(sampleRate, recording):
     ref = np.add(recording, noise)
     return ref
 
-def timeShift():
-    # Add time shift
-    pass
 
-def synthetic(recording, vocalisation):
+def superimpose(recording, vocalisation):
     # Overlay vocalisations with "empty" field recordings
-    # combine = 
-    index = 2000000
-
-    # index = random.randint(0,len(recording))
+    index = random.randint(0,len(recording))
 
     padded = np.zeros(len(recording))
     padded = np.insert(padded, index, vocalisation)
@@ -55,27 +45,38 @@ def denoise(directory):
 
     return denoised
 
-# Denoised vocalisation
-directory = './recordings/downsampled/possum16k.wav'
-vocalisation = denoise(directory)
 
-# Denoised field recording
-directory = './recordings/downsampled/field16k.wav'
-recording = denoise(directory)
-
-# Generate synthetic
-c = synthetic(recording, vocalisation)
-
-plt.specgram(c)
-plt.show()
+def load(directory):
+    recording, sampleRate = librosa.load(directory, sr=None)
+    return recording, sampleRate
 
 
-# ref = addNoise(sampleRate, recording)
+def select(directory):
+    # Select empty field recordings
+    empty = []
+    for dirpaths, dirnames, filenames in os.walk(directory):
+        for filename in filenames:
+            empty.append(f"{directory}/{filename}")
 
-# plt.figure(1)
-# plt.specgram(ref, Fs=sampleRate)
+    return empty
 
-# plt.figure(2)
-# plt.specgram(recording, Fs=sampleRate)
-# plt.show()
+
+def generate(vocalisation):
+    # Generate synthetic data for a known vocalisation
+    directory = './recordings/empty'
+    empty = select(directory)
+
+    # Denoise vocalisation
+    denoised = denoise(vocalisation)
+
+    # Superimpose vocalisation at different times 
+    for i,e in enumerate(empty):
+        print(e)
+        field, sampleRate = load(e)
+        synthetic = superimpose(field, denoised)
+        sf.write(f'./training/denoised{i}.wav', synthetic, sampleRate)
+
+
+vocalisation = './recordings/downsampled/possum16k.wav'
+generate(vocalisation)
 

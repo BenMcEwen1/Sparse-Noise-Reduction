@@ -5,7 +5,8 @@ from scipy.signal import chirp
 from scipy.stats import entropy, kstest, uniform
 import matplotlib.pyplot as plt
 import time
-
+import librosa
+from spectral_noise_grating import plot_spectrogram, convertToAmp, spectrogram, autoThreshold, reconstruct, ISTFT, mask
 
 # def entropy(data):
 #     # Calculate the entropy given packet coefficients
@@ -117,11 +118,7 @@ def thresholdFull(signal, thres, wavelet='dmey', levels=5):
 
         # Apply thresholding to detailed coeffs
         for i,coeff in enumerate(coeffs):
-            # thres = 0.2*np.std(coeff)
-            thres = thres * 0.6
-            # thres = universalThresholding(coeff) # Use garrote
-            # print(thres)
-            # thres = thres * 0.002
+            thres = 0.2*np.std(coeff)
             coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # soft or garote works well
 
         # Reconstruct each level
@@ -137,10 +134,8 @@ def thresholdPartial(signal, thres, wavelet='dmey', level=5):
     coeffs = partialTree(signal, levels=level, plot=True)
 
     for i,coeff in enumerate(coeffs):
-        if i != 0: # First index is the Approximate node, careful!
-            thres = thres * 0.6 # AviaNZ suggests the std of the lowest packet x4.5
-            # thres = universalThresholding(coeff)
-            coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
+        thres = np.mean(coeff) + 4.5*np.std(coeff)
+        coeffs[i] = pywt.threshold(coeff, value=thres, mode='soft') # 0.2 works well for chirp
 
     signal = pywt.waverec(coeffs, wavelet='dmey')
 
@@ -180,12 +175,12 @@ def universalThresholding(coeffs):
 
 
 # Noisy possum Test
-sampleRate, signal = wave.read('recordings/cat.wav') # possum.wav works well Haar or dmey, 5, partial, thres=96*4.5
+signal, sampleRate = librosa.load('./recordings/downsampled/possum16k.wav', sr=None)
 form = signal.dtype
 wavelet = 'dmey'
 
 level = pywt.dwt_max_level(len(signal), wavelet) # Calculate the maximum level
-level = 5
+level = 2
 
 # Normalisation
 # signal = (signal - np.mean(signal)) / np.std(signal) # Normalisation
@@ -197,14 +192,14 @@ print(f"Max level: {level}")
 
 thres = findThres(signal, level)
 # thres = universalThresholding(signal)
-print(thres)
 
-decomposition(signal, level)
+# decomposition(signal, level)
 
 
 # denoised = thresholdFull(signal, thres, wavelet=wavelet, levels=level)
 denoised = thresholdPartial(signal, thres, wavelet=wavelet, level=level)
 
+# plot_spectrogram(denoised,title="Denoised")
 
 plt.figure()
 plt.title('Original/Denoised signal')
@@ -220,5 +215,5 @@ ax2.specgram(denoised, Fs=sampleRate)
 
 plt.show()
 
-# Save denoised signal
-wave.write('denoised/denoised.wav', sampleRate, denoised)
+# # Save denoised signal
+# wave.write('denoised/denoised.wav', sampleRate, denoised)
