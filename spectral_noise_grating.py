@@ -53,7 +53,7 @@ def spectrogram(signal):
     return stft, stft_db
 
 
-def threshold(noise_stft_db, n=2.0):
+def threshold(noise_stft_db, n=1.0):
     # Calculate statistics of noise
     mean_freq_noise = np.mean(noise_stft_db, axis=1)
     std_freq_noise = np.std(noise_stft_db, axis=1)
@@ -68,7 +68,7 @@ def threshold(noise_stft_db, n=2.0):
     return thresh
 
 
-def autoThreshold(sig_stft_db, window=50, step=25, n=3.0):
+def autoThreshold(sig_stft_db, window=50, step=25, n=2.0):
     thres = []
 
     # Find threshold for each frequency band
