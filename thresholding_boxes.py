@@ -278,7 +278,7 @@ def universalThresholding(coeffs):
 
 
 # Noisy possum Test
-sampleRate, signal = wave.read('recordings/downsampled/possum16k.wav') # possum.wav works well Haar or dmey, 5, partial, thres=96*4.5
+sampleRate, signal = wave.read('recordings/downsampled/field16k.wav') # possum.wav works well Haar or dmey, 5, partial, thres=96*4.5
 form = signal.dtype
 wavelet = 'dmey'
 print(sampleRate)
@@ -314,7 +314,7 @@ print(f"Run time: {diff}")
 # fig, (ax1, ax2) = plt.subplots(2)
 # fig.suptitle('Original/Denoised Spectrogram')
 # ax1.specgram(signal, Fs=sampleRate)
-# denoised = np.asarray(denoised, dtype=form) # Downsample
+denoised = np.asarray(denoised, dtype=form) # Downsample
 # ax2.specgram(denoised, Fs=sampleRate)
 
 #display boxes of noise selection

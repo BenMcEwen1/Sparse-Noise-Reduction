@@ -106,9 +106,11 @@ print("Accuracy: ", accuracy)
 
 
 # Test 
-audio,_ = loadAudio('p3.wav', 1)
+audio,_ = loadAudio('possum16k.wav', 1)
 scores, embeddings, spectrogram = yamnet_model(audio)
 result = model(embeddings).numpy()
+
+print(result)
 
 inferred_class = list(classes.keys())[result.mean(axis=0).argmax()]
 print(f'The main sound is: {inferred_class}')

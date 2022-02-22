@@ -68,7 +68,7 @@ def threshold(noise_stft_db, n=1.0):
     return thresh
 
 
-def autoThreshold(sig_stft_db, window=50, step=25, n=2.0):
+def autoThreshold(sig_stft_db, window=50, step=25, n=1):
     thres = []
 
     # Find threshold for each frequency band
@@ -86,7 +86,7 @@ def autoThreshold(sig_stft_db, window=50, step=25, n=2.0):
                 min_mean = mean
                 min_index = i
         
-        t = min_mean + min_std * n
+        t = min_mean*2 #+ min_std * n
         thres.append(t)
 
     # Reshape and extend mask across full recording

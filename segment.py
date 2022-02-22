@@ -96,7 +96,7 @@ def dilation(recommend, k=200):
     return d
 
 
-def findRegions(correlation, threshold=0.3):
+def findRegions(correlation, threshold=0.2):
     # Find the regions of interest
     regions = []
     for cor in correlation:
@@ -169,7 +169,7 @@ def rank(correlation, stamps, calls):
     return rs
 
 
-def combine(rank, lim=30000):
+def combine(rank, lim=50000):
     # Combine similar recommendations
     new = []
 
@@ -222,6 +222,8 @@ r = rank(cor, stamp, calls)
 
 # Recommendations in similar time ranges are combined
 unique, calls = combine(r)
+print(unique)
+print(len(s))
 
 plt.plot(s)
 for i,seg in enumerate(unique):
