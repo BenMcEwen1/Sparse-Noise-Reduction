@@ -13,7 +13,7 @@ win_length = 2048
 hop_length = 512
 
 
-def STFT(y, n_fft, hop_length, win_length):
+def STFT(y, n_fft=n_fft, hop_length=hop_length, win_length=win_length):
     return librosa.stft(y=y, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
 
 
@@ -86,7 +86,7 @@ def autoThreshold(sig_stft_db, window=50, step=25, n=1):
                 min_mean = mean
                 min_index = i
         
-        t = min_mean*2 #+ min_std * n
+        t = min_mean+ min_std * n
         thres.append(t)
 
     # Reshape and extend mask across full recording

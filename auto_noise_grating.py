@@ -6,7 +6,7 @@ import soundfile as sf
 import time
 
 
-recording, sample_rate = librosa.load('./recordings/downsampled/stoat16k.wav', sr=None)
+recording, sample_rate = librosa.load('./recordings/downsampled/possum16k.wav', sr=None)
 
 
 sig_stft, sig_stft_db = spectrogram(recording)
@@ -28,5 +28,5 @@ print(f"Run time {diff}")
 sf.write('./denoised/denoised.wav', denoised, sample_rate)
 
 # Original and denoised
-plot_spectrogram(original, title="Original spectrogram")
-plot_spectrogram(reconstructed, title="Reconstructed spectrogram")
+# plot_spectrogram(original, title="Original spectrogram")
+# plot_spectrogram(reconstructed, title="Reconstructed spectrogram")
