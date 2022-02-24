@@ -9,8 +9,8 @@ import librosa.display
 import soundfile as sf
 
 
-# recording = "./recordings/downsampled/cat16k.wav"
-recording = "./denoised/denoised.wav"
+recording = "./recordings/downsampled/stoat16k.wav"
+# recording = "./denoised/denoised.wav"
 
 rec, sample_rate = librosa.load(recording, sr=None)
 
@@ -19,17 +19,21 @@ S_db = librosa.amplitude_to_db(np.abs(S), ref=np.max)
 
 # Non-negative Matrix Factorisation (NMF)
 x, phase = librosa.magphase(S)
-n_components = 2
-W, H = librosa.decompose.decompose(x, n_components=n_components, sort=True, max_iter=1000)
-
+n_components = 3
+component, activation = librosa.decompose.decompose(x, n_components=n_components, sort=True, max_iter=1000)
 
 # Reconstruct original
-D_k = W.dot(H)
+D_k = component.dot(activation)
 y_k = librosa.istft(D_k * phase)
 sf.write('./denoised/reconstruct.wav', y_k, sample_rate)
 
 # Reconstruct components
 for n in range(n_components):
-    D_k = np.multiply.outer(W[:, n], H[n])
+    D_k = np.multiply.outer(component[:, n], activation[n])
     y_k = librosa.istft(D_k * phase)
     sf.write(f'./denoised/component_{n}.wav', y_k, sample_rate)
+
+for n in range(n_components):
+    plt.plot(activation[n,:])
+plt.show()
+

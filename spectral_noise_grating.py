@@ -68,7 +68,7 @@ def threshold(noise_stft_db, n=1.0):
     return thresh
 
 
-def autoThreshold(sig_stft_db, window=50, step=25, n=1):
+def autoThreshold(sig_stft_db, window=50, step=25, n=0.2):
     thres = []
 
     # Find threshold for each frequency band
