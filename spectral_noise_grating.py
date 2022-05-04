@@ -1,12 +1,12 @@
 # Ref: https://timsainburg.com/noise-reduction-python.html
 
-import scipy.io.wavfile as wave
-from numpy.fft import fft 
+# import scipy.io.wavfile as wave
+# from numpy.fft import fft 
 import matplotlib.pyplot as plt
 import numpy as np
 import librosa
-from scipy.signal import spectrogram, istft, fftconvolve
-import soundfile as sf
+from scipy.signal import fftconvolve
+# import soundfile as sf
 
 n_fft = 2048
 win_length = 2048
@@ -68,14 +68,14 @@ def threshold(noise_stft_db, n=1.0):
     return thresh
 
 
-def autoThreshold(sig_stft_db, window=50, step=25, n=0.2):
+def autoThreshold(sig_stft_db, window=50, step=25, n=0.5):
     thres = []
 
     # Find threshold for each frequency band
     for j,row in enumerate(sig_stft_db):
         min_std = 1000
         min_mean = 0
-        min_index = 0
+        # min_index = 0
 
         for i in range(0,len(row),step):
             mean = np.mean(row[i:i+window])
@@ -84,9 +84,9 @@ def autoThreshold(sig_stft_db, window=50, step=25, n=0.2):
             if std < min_std:
                 min_std = std
                 min_mean = mean
-                min_index = i
-        
-        t = min_mean+ min_std * n
+                # min_index = i
+
+        t = min_mean + min_std * n
         thres.append(t)
 
     # Reshape and extend mask across full recording
@@ -99,7 +99,7 @@ def autoThreshold(sig_stft_db, window=50, step=25, n=0.2):
 
 def mask(db_thresh, sig_stft, sig_stft_db):
     # Smoothing filter and normalise
-    smooth = np.ones((5,9)) * 0.5
+    smooth = np.ones((7,7))
     smooth = smooth / np.sum(smooth)
 
     # mask if the signal is above the threshold
