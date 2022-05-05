@@ -311,24 +311,24 @@ print(f"Run time: {diff}")
 # plt.plot(denoised)
 # plt.show()
 
-# fig, (ax1, ax2) = plt.subplots(2)
-# fig.suptitle('Original/Denoised Spectrogram')
-# ax1.specgram(signal, Fs=sampleRate)
+fig, (ax1, ax2) = plt.subplots(2)
+fig.suptitle('Original/Denoised Spectrogram')
+ax1.specgram(signal, Fs=sampleRate)
 denoised = np.asarray(denoised, dtype=form) # Downsample
-# ax2.specgram(denoised, Fs=sampleRate)
+ax2.specgram(denoised, Fs=sampleRate)
 
-#display boxes of noise selection
-# for box in specGraphBoxes[0]: #vertical pass
-#     box = np.array([[box[2],box[0]],[box[3],box[0]],[box[3],box[1]],[box[2],box[1]]])
-#     p = Polygon(box, fill=False, color='black')
-#     ax1.add_patch(p)
+# display boxes of noise selection
+for box in specGraphBoxes[0]: #vertical pass
+    box = np.array([[box[2],box[0]],[box[3],box[0]],[box[3],box[1]],[box[2],box[1]]])
+    p = Polygon(box, fill=False, color='black')
+    ax1.add_patch(p)
 
-# for box in specGraphBoxes[1]:#horizontal pass
-#     box = np.array([[box[2],box[0]],[box[3],box[0]],[box[3],box[1]],[box[2],box[1]]])
-#     p = Polygon(box, fill=False, color='red')
-#     ax1.add_patch(p)
+for box in specGraphBoxes[1]:#horizontal pass
+    box = np.array([[box[2],box[0]],[box[3],box[0]],[box[3],box[1]],[box[2],box[1]]])
+    p = Polygon(box, fill=False, color='red')
+    ax1.add_patch(p)
 
-# plt.show()
+plt.show()
 
 # Save denoised signal
-wave.write('denoised/denoised.wav', sampleRate, denoised)
+wave.write('./denoised/denoised.wav', sampleRate, denoised)
