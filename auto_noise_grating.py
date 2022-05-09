@@ -2,9 +2,10 @@ from spectral_noise_grating import spectrogram, autoThreshold, mask, reconstruct
 import librosa
 import soundfile as sf
 
-filename = 'Possum1'
+filename = 'Mew1'
 
 recording, sample_rate = librosa.load(f'./audio/{filename}.wav', sr=None)
+print(sample_rate)
 
 sig_stft, sig_stft_db = spectrogram(recording)
 thresh = autoThreshold(sig_stft_db)

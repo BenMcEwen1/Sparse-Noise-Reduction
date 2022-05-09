@@ -68,7 +68,7 @@ def threshold(noise_stft_db, n=1.0):
     return thresh
 
 
-def autoThreshold(sig_stft_db, window=50, step=25, n=2.0):
+def autoThreshold(sig_stft_db, window=100, step=50, n=0.0):
     thres = []
 
     # Find threshold for each frequency band
@@ -99,7 +99,7 @@ def autoThreshold(sig_stft_db, window=50, step=25, n=2.0):
 
 def mask(db_thresh, sig_stft, sig_stft_db):
     # Smoothing filter and normalise
-    smooth = np.ones((7,7))
+    smooth = np.ones((2,2))
     smooth = smooth / np.sum(smooth)
 
     # mask if the signal is above the threshold
