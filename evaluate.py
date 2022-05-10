@@ -17,7 +17,6 @@ def SnNR(original, denoised, sigRange, noiseRange):
     N = sum(original**2)/len(original)
     return 10*math.log((S + N)/N)
 
-
 def success_ratio(original, denoised, noiseRange): # WORKING
     denoised = denoised[noiseRange[0]:noiseRange[1]]
     original = original[noiseRange[0]:noiseRange[1]]
@@ -34,10 +33,10 @@ def dataLoader(plot=False):
         data = json.load(dataset)
 
     for filename in data.keys():
-        if True:
+        if filename:
             results = {}
             original, sampleRate = librosa.load(f'./audio/{filename}.wav', sr=None)
-            denoised, sampleRate = librosa.load(f'./denoised/{filename}_denoised.wav', sr=None)
+            denoised, sampleRate = librosa.load(f'./denoised_SNG/{filename}_denoised.wav', sr=None)
             original = original[:len(denoised)] # Ensure signals are the same length
 
             signalStart = data[filename]['signalStart'] * sampleRate

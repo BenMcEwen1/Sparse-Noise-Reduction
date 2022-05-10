@@ -277,14 +277,16 @@ def universalThresholding(coeffs):
     return v * np.sqrt(2*np.log(N))
 
 
+filename = 'Aggressive1'
+
 # Noisy possum Test
-sampleRate, signal = wave.read('recordings/downsampled/field16k.wav') # possum.wav works well Haar or dmey, 5, partial, thres=96*4.5
+sampleRate, signal = wave.read(f'./audio/{filename}.wav') # possum.wav works well Haar or dmey, 5, partial, thres=96*4.5
 form = signal.dtype
 wavelet = 'dmey'
 print(sampleRate)
 
 level = pywt.dwt_max_level(len(signal), wavelet) # Calculate the maximum level
-# level = 9
+level = 5
 # Normalisation
 # signal = (signal - np.mean(signal)) / np.std(signal) # Normalisation
 # signal = np.divide(signal, sum(signal)) # Generate random variable that add to 1.0
@@ -311,24 +313,24 @@ print(f"Run time: {diff}")
 # plt.plot(denoised)
 # plt.show()
 
-fig, (ax1, ax2) = plt.subplots(2)
-fig.suptitle('Original/Denoised Spectrogram')
-ax1.specgram(signal, Fs=sampleRate)
-denoised = np.asarray(denoised, dtype=form) # Downsample
-ax2.specgram(denoised, Fs=sampleRate)
+# fig, (ax1, ax2) = plt.subplots(2)
+# fig.suptitle('Original/Denoised Spectrogram')
+# ax1.specgram(signal, Fs=sampleRate)
+# denoised = np.asarray(denoised, dtype=form) # Downsample
+# ax2.specgram(denoised, Fs=sampleRate)
 
-# display boxes of noise selection
-for box in specGraphBoxes[0]: #vertical pass
-    box = np.array([[box[2],box[0]],[box[3],box[0]],[box[3],box[1]],[box[2],box[1]]])
-    p = Polygon(box, fill=False, color='black')
-    ax1.add_patch(p)
+# # display boxes of noise selection
+# for box in specGraphBoxes[0]: #vertical pass
+#     box = np.array([[box[2],box[0]],[box[3],box[0]],[box[3],box[1]],[box[2],box[1]]])
+#     p = Polygon(box, fill=False, color='black')
+#     ax1.add_patch(p)
 
-for box in specGraphBoxes[1]:#horizontal pass
-    box = np.array([[box[2],box[0]],[box[3],box[0]],[box[3],box[1]],[box[2],box[1]]])
-    p = Polygon(box, fill=False, color='red')
-    ax1.add_patch(p)
+# for box in specGraphBoxes[1]:#horizontal pass
+#     box = np.array([[box[2],box[0]],[box[3],box[0]],[box[3],box[1]],[box[2],box[1]]])
+#     p = Polygon(box, fill=False, color='red')
+#     ax1.add_patch(p)
 
-plt.show()
+# plt.show()
 
 # Save denoised signal
-wave.write('./denoised/denoised.wav', sampleRate, denoised)
+wave.write(f'./WPD_results/{filename}_denoised.wav', sampleRate, denoised)

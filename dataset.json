@@ -173,6 +173,13 @@
         "signalEnd": 5,
         "noiseStart": 6,
         "noiseEnd": 9
+    },
+    "cat": {
+        "sampleRate": 16000,
+        "signalStart": 1,
+        "signalEnd": 5,
+        "noiseStart": 0,
+        "noiseEnd": 1
     }
 
 }
