@@ -14,42 +14,29 @@ def addNoise(sampleRate, recording):
     ref = np.add(recording, noise)
     return ref
 
-
 def superimpose(recording, vocalisation):
     # Overlay vocalisations with "empty" field recordings
     index = random.randint(0,len(recording))
-
     padded = np.zeros(len(recording))
     padded = np.insert(padded, index, vocalisation)
-
     padded = padded[0:len(recording)]
-
     combined = np.add(recording, padded)
     return combined
-
 
 def denoise(directory):
     # Denoise recording 
     vocalisation, sample_rate = librosa.load(directory, sr=None)
-
     sig_stft, sig_stft_db = spectrogram(vocalisation)
-
     thresh = autoThreshold(sig_stft_db)
-
     masked, _ = mask(thresh, sig_stft, sig_stft_db)
-
     reconstructed, original = reconstruct(masked, vocalisation)
-
     denoised = convertToAmp(reconstructed)
     denoised = ISTFT(denoised)
-
     return denoised
-
 
 def load(directory):
     recording, sampleRate = librosa.load(directory, sr=None)
     return recording, sampleRate
-
 
 def select(directory):
     # Select empty field recordings
@@ -57,9 +44,7 @@ def select(directory):
     for dirpaths, dirnames, filenames in os.walk(directory):
         for filename in filenames:
             empty.append(f"{directory}/{filename}")
-
     return empty
-
 
 def generate(vocalisation):
     # Generate synthetic data for a known vocalisation
@@ -77,6 +62,6 @@ def generate(vocalisation):
         sf.write(f'./training/denoised{i}.wav', synthetic, sampleRate)
 
 
-vocalisation = './recordings/downsampled/possum16k.wav'
-generate(vocalisation)
+# vocalisation = './recordings/downsampled/possum16k.wav'
+# generate(vocalisation)
 

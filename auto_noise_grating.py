@@ -3,10 +3,9 @@ import librosa
 import soundfile as sf
 import time
 
-filename = 'field16k'
+filename = 'Aggressive1'
 
-recording, sample_rate = librosa.load(f'./Sound Files/{filename}.wav', sr=None)
-print(sample_rate)
+recording, sample_rate = librosa.load(f'./audio/{filename}.wav', sr=None)
 
 start = time.time()
 sig_stft, sig_stft_db = spectrogram(recording)
@@ -21,7 +20,7 @@ end = time.time()
 diff = end - start
 print(diff)
 
-sf.write(f'./denoised/{filename}_denoised.wav', denoised, sample_rate)
+sf.write(f'./denoised_SNG/{filename}_denoised.wav', denoised, sample_rate)
 
 # Original and denoised
 # plot_spectrogram(original, title="Original spectrogram")

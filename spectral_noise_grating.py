@@ -1,12 +1,9 @@
-# Ref: https://timsainburg.com/noise-reduction-python.html
+# Implementation adapted from Ref: https://timsainburg.com/noise-reduction-python.html
 
-# import scipy.io.wavfile as wave
-# from numpy.fft import fft 
 import matplotlib.pyplot as plt
 import numpy as np
 import librosa
 from scipy.signal import fftconvolve
-# import soundfile as sf
 
 n_fft = 2048
 win_length = 2048
@@ -53,29 +50,13 @@ def spectrogram(signal):
     return stft, stft_db
 
 
-def threshold(noise_stft_db, n=1.0):
-    # Calculate statistics of noise
-    mean_freq_noise = np.mean(noise_stft_db, axis=1)
-    std_freq_noise = np.std(noise_stft_db, axis=1)
-    noise_thresh = mean_freq_noise + std_freq_noise * n 
-
-    # Reshape and extend mask across full recording
-    reshaped = np.reshape(noise_thresh, (1,len(noise_thresh)))
-    repeats = np.shape(sig_stft_db)[1]
-
-    thresh = np.repeat(reshaped, repeats, axis=0).T
-
-    return thresh
-
-
-def autoThreshold(sig_stft_db, window=500, step=250, n=0.0):
+def autoThreshold(sig_stft_db, window=500, step=250, n=1.0):
     thres = []
 
     # Find threshold for each frequency band
     for j,row in enumerate(sig_stft_db):
         min_std = 1000
         min_mean = 0
-        # min_index = 0
 
         for i in range(0,len(row),step):
             mean = np.mean(row[i:i+window])
@@ -84,7 +65,6 @@ def autoThreshold(sig_stft_db, window=500, step=250, n=0.0):
             if std < min_std:
                 min_std = std
                 min_mean = mean
-                # min_index = i
 
         t = min_mean + min_std * n
         thres.append(t)
