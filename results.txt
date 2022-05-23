@@ -51,3 +51,31 @@ Results: {'Stoat2': {'SNR_db': 4.2921256174939835, 'SnNR_db': 13.258589067434212
 Results: {'Rat1': {'SNR_db': 5.564412052913861, 'SnNR_db': 52.77169952723594, 'sr': 0.08894973875134518, 'psnr': 7.798215926085707}}
 Results: {'Rat2': {'SNR_db': 5.662074491302578, 'SnNR_db': 0.11107069425240212, 'sr': -0.5709182512943006, 'psnr': 12.24254443021672}}
 Results: {'Rat3': {'SNR_db': 3.5295847302893857, 'SnNR_db': 20.897836561061858, 'sr': -0.10406556189147648, 'psnr': 11.547300046226239}}
+
+SnNR Updated
+Results: {'Aggressive1': {'SnNR_original': 34.748070741747725, 'SnNR_denoised': 49.13222483578308}}
+Results: {'Aggressive2': {'SnNR_original': 25.34243974066191, 'SnNR_denoised': 53.59576325720009}}
+Results: {'Aggressive3': {'SnNR_original': 7.806233159214354, 'SnNR_denoised': 14.9897546503258}}
+Results: {'Alarm1': {'SnNR_original': 5.965151555845067, 'SnNR_denoised': 3.3918005370796322}}
+Results: {'Bird1': {'SnNR_original': 46.58133821086815, 'SnNR_denoised': 82.78338097042243}}
+Results: {'Chet1': {'SnNR_original': 35.24907558295075, 'SnNR_denoised': 80.52409459753446}}
+Results: {'Chet2': {'SnNR_original': 34.653636554576394, 'SnNR_denoised': 61.95866501154288}}
+Results: {'Chet3': {'SnNR_original': 37.392165336958655, 'SnNR_denoised': 76.2384468221379}}
+Results: {'Chet4': {'SnNR_original': 17.380633150435226, 'SnNR_denoised': 40.39734024307232}}
+Results: {'Mew1': {'SnNR_original': 9.502288836730727, 'SnNR_denoised': 9.313651517203237}}
+Results: {'Mew2': {'SnNR_original': 8.993007902775329, 'SnNR_denoised': 48.63905554115166}}
+Results: {'Peep1': {'SnNR_original': 21.842459226983276, 'SnNR_denoised': 57.790948730357385}}
+Results: {'Peep2': {'SnNR_original': 6.279183599520448, 'SnNR_denoised': 15.477377883566772}}
+Results: {'Peep3': {'SnNR_original': 18.7184607856468, 'SnNR_denoised': 53.623033608094545}}
+Results: {'Possum1': {'SnNR_original': 36.887729591046835, 'SnNR_denoised': 67.09714218654126}}
+Results: {'Possum3': {'SnNR_original': 0.5822166916601695, 'SnNR_denoised': 0.014044469831385293}}
+Results: {'PossumNoisy': {'SnNR_original': 7.575041712686225, 'SnNR_denoised': 16.80829067256915}}
+Results: {'Shrill': {'SnNR_original': 10.630243381162373, 'SnNR_denoised': 36.88344950048009}}
+Results: {'Shrill2': {'SnNR_original': 3.395740920763217, 'SnNR_denoised': 0.6997276063206881}}
+Results: {'Stoat1': {'SnNR_original': 17.38048631887129, 'SnNR_denoised': 40.443022773747266}}
+Results: {'Stoat_Chatter': {'SnNR_original': 14.218594391476394, 'SnNR_denoised': 13.176143492458753}}
+Results: {'Stoat2': {'SnNR_original': 7.236338499955529, 'SnNR_denoised': 38.290606602471996}}
+Results: {'Rat1': {'SnNR_original': 39.95177100738993, 'SnNR_denoised': 77.76771578088878}}
+Results: {'Rat2': {'SnNR_original': 0.13760751424686818, 'SnNR_denoised': 0.004191442957936254}}
+Results: {'Rat3': {'SnNR_original': 13.332122325363585, 'SnNR_denoised': 42.432929040670004}}
+Results: {'cat': {'SnNR_original': 11.14015613541314, 'SnNR_denoised': 12.262123403076545}}

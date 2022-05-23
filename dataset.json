@@ -106,10 +106,10 @@
     },
     "Possum3": {
         "sampleRate": 96,
-        "signalStart": 4,
-        "signalEnd": 6,
+        "signalStart": 2,
+        "signalEnd": 4,
         "noiseStart": 0,
-        "noiseEnd": 4
+        "noiseEnd": 2
     },
     "PossumNoisy": {
         "sampleRate": 44100,
@@ -127,10 +127,10 @@
     },
     "Shrill2": {
         "sampleRate": 16000,
-        "signalStart": 2,
+        "signalStart": 1,
         "signalEnd": 5,
-        "noiseStart": 7,
-        "noiseEnd": 9
+        "noiseStart": 6,
+        "noiseEnd": 8
     },
     "Stoat1": {
         "sampleRate": 16000,
@@ -162,10 +162,10 @@
     },
     "Rat2": {
         "sampleRate": 250000,
-        "signalStart": 0,
-        "signalEnd": 3,
-        "noiseStart": 4,
-        "noiseEnd": 9
+        "signalStart": 4,
+        "signalEnd": 9,
+        "noiseStart": 0,
+        "noiseEnd": 3
     },
     "Rat3": {
         "sampleRate": 250000,

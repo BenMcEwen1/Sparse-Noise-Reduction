@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import tensorflow as tf
+
+
 import tensorflow_hub as hub
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -44,9 +46,11 @@ dataset.element_spec
 # Load Yamnet model (Transfer learning)
 yamnet_model = hub.load('https://tfhub.dev/google/yamnet/1')
 
+yamnet_model.save('./classifer/pretrained/')
+
 def extract_embedding(audio, label):
   # Extract yamnet embedding 
-  scores, embeddings, spectrogram = yamnet_model(audio)
+  _, embeddings,_ = yamnet_model(audio)
   num_embeddings = tf.shape(embeddings)[0]
   return (embeddings, tf.repeat(label, num_embeddings))
 
@@ -54,20 +58,16 @@ dataset = dataset.map(extract_embedding).unbatch()
 dataset.element_spec
 
 
-
 def split(dataset):
     # Shuffle and split dataset
     dataset = dataset.shuffle(300) # Shuffle
-    
     test = dataset.take(50) 
     remaining = dataset.skip(50)
     train = remaining.take(150)
     val = remaining.skip(100)
-
     test = test.cache().batch(5).prefetch(AUTOTUNE)
     train = train.cache().batch(5).prefetch(AUTOTUNE)
     val = val.cache().batch(5).prefetch(AUTOTUNE)
-
     return test, train, val
 
 test, train, val = split(dataset)
@@ -93,7 +93,6 @@ model, classes = createModel()
 # Compile model
 model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), optimizer="adam", metrics=['accuracy'])
 
-
 # Train model
 callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3, restore_best_weights=True)
 
@@ -103,6 +102,8 @@ model.fit(train, validation_data=val, epochs=10, callbacks=callback)
 loss, accuracy = model.evaluate(test)
 print("Loss: ", loss)
 print("Accuracy: ", accuracy)
+
+
 
 
 # Test 
@@ -125,7 +126,6 @@ class ReduceMeanLayer(tf.keras.layers.Layer):
   def call(self, input):
     return tf.math.reduce_mean(input, axis=self.axis)
 
-saved_model_path = '/home/cosc/student/bmc142/dataset/classifier/' # Replace
 
 input_segment = tf.keras.layers.Input(shape=(), dtype=tf.float32, name='audio')
 embedding_extraction_layer = hub.KerasLayer('https://tfhub.dev/google/yamnet/1',trainable=False, name='yamnet')
@@ -134,4 +134,4 @@ serving_outputs = model(embeddings_output)
 serving_outputs = ReduceMeanLayer(axis=0, name='classifier')(serving_outputs)
 
 serving_model = tf.keras.Model(input_segment, serving_outputs)
-serving_model.save(saved_model_path, include_optimizer=False)
+serving_model.save('./classifier/model', include_optimizer=True)

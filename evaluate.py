@@ -10,11 +10,13 @@ def SNR(original, denoised):
     N = sum(original**2)/len(original)
     return 10*math.log10(S/N)
 
-def SnNR(original, denoised, sigRange, noiseRange):
-    denoised = denoised[sigRange[0]:sigRange[1]]
-    original = original[noiseRange[0]:noiseRange[1]]
-    S = sum(denoised**2)/len(denoised)
-    N = sum(original**2)/len(original)
+def SnNR(original, sigRange, noiseRange):
+    signal = original[sigRange[0]:sigRange[1]]
+    noise = original[noiseRange[0]:noiseRange[1]]
+
+    S = sum(signal**2)/len(signal)
+    N = sum(noise**2)/len(noise)
+
     return 10*math.log((S + N)/N)
 
 def success_ratio(original, denoised, noiseRange): # WORKING
@@ -36,7 +38,7 @@ def dataLoader(plot=False):
         if filename:
             results = {}
             original, sampleRate = librosa.load(f'./audio/{filename}.wav', sr=None)
-            denoised, sampleRate = librosa.load(f'./denoised_SNG/{filename}_denoised.wav', sr=None)
+            denoised, sampleRate = librosa.load(f'./denoised_WPD/{filename}_denoised.wav', sr=None)
             original = original[:len(denoised)] # Ensure signals are the same length
 
             signalStart = data[filename]['signalStart'] * sampleRate
@@ -45,15 +47,20 @@ def dataLoader(plot=False):
             noiseEnd = data[filename]['noiseEnd'] * sampleRate
 
             SNR_db = SNR(original, denoised)
-            SnNR_db = SnNR(original, denoised, [signalStart,signalEnd], [noiseStart,noiseEnd])
+
+            # original
+            SnNR_original = SnNR(original, [signalStart,signalEnd], [noiseStart,noiseEnd])
+            SnNR_denoised = SnNR(denoised, [signalStart,signalEnd], [noiseStart,noiseEnd])
+
             sr = success_ratio(original, denoised, [noiseStart,noiseEnd]) # WORKING
             psnr = PSNR(original, denoised) # WORKING
 
             results[filename] = {
-                'SNR_db': SNR_db,
-                'SnNR_db': SnNR_db,
-                'sr': sr,
-                'psnr': psnr
+                # 'SNR_db': SNR_db,
+                'SnNR_original': SnNR_original,
+                'SnNR_denoised': SnNR_denoised,
+                # 'sr': sr,
+                # 'psnr': psnr
             }
 
             if plot:
