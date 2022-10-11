@@ -57,5 +57,6 @@ class process:
             return self.recording
 
 
-# directory = './recordings/original/double_channel'
-# r = process(directory)
+directory = './recordings/ref/possum_snip4'
+r = process(directory)
+r.generateRef(directory)

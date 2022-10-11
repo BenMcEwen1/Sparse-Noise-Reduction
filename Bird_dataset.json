@@ -1,0 +1,212 @@
+{
+    "kc1": {
+        "sampleRate": 48000,
+        "signalStart": 0,
+        "signalEnd": 1,
+        "noiseStart": 1.2,
+        "noiseEnd": 1.3
+    },
+    "kc2": {
+        "sampleRate": 48000,
+        "signalStart": 0,
+        "signalEnd": 1,
+        "noiseStart": 1.2,
+        "noiseEnd": 1.3
+    },
+    "kc3": {
+        "sampleRate": 48000,
+        "signalStart": 0,
+        "signalEnd": 1,
+        "noiseStart": 1.2,
+        "noiseEnd": 1.3
+    },
+    "kc4": {
+        "sampleRate": 48000,
+        "signalStart": 0.1,
+        "signalEnd": 0.7,
+        "noiseStart": 0.8,
+        "noiseEnd": 1.1
+    },
+    "kc5": {
+        "sampleRate": 48000,
+        "signalStart": 0.1,
+        "signalEnd": 1,
+        "noiseStart": 1,
+        "noiseEnd": 1.3
+    },
+    "kiwif1": {
+        "sampleRate": 48000,
+        "signalStart": 0.1,
+        "signalEnd": 0.8,
+        "noiseStart": 1,
+        "noiseEnd": 1.9
+    },
+    "kiwif2": {
+        "sampleRate": 48000,
+        "signalStart": 0.4,
+        "signalEnd": 0.9,
+        "noiseStart": 0,
+        "noiseEnd": 0.4
+    },
+    "kiwif3": {
+        "sampleRate": 48000,
+        "signalStart": 0,
+        "signalEnd": 0.6,
+        "noiseStart": 0.7,
+        "noiseEnd": 1.6
+    },
+    "kiwif4": {
+        "sampleRate": 48000,
+        "signalStart": 0,
+        "signalEnd": 0.6,
+        "noiseStart": 0.7,
+        "noiseEnd": 1.3
+    },
+    "kiwif5": {
+        "sampleRate": 48000,
+        "signalStart": 0,
+        "signalEnd": 0.9,
+        "noiseStart": 1,
+        "noiseEnd": 1.3
+    },
+    "male1": {
+        "sampleRate": 48000,
+        "signalStart": 0.5,
+        "signalEnd": 1,
+        "noiseStart": 0,
+        "noiseEnd": 0.4
+    },
+    "male2": {
+        "sampleRate": 48000,
+        "signalStart": 0.1,
+        "signalEnd": 0.7,
+        "noiseStart": 0.8,
+        "noiseEnd": 1.2
+    },
+    "male3": {
+        "sampleRate": 48000,
+        "signalStart": 0,
+        "signalEnd": 0.5,
+        "noiseStart": 0.6,
+        "noiseEnd": 1.2
+    },
+    "male4": {
+        "sampleRate": 48000,
+        "signalStart": 0,
+        "signalEnd": 0.5,
+        "noiseStart": 0.6,
+        "noiseEnd": 1.2
+    },
+    "male5": {
+        "sampleRate": 48000,
+        "signalStart": 0,
+        "signalEnd": 0.5,
+        "noiseStart": 0.6,
+        "noiseEnd": 1.2
+    },
+    "more1": {
+        "sampleRate": 44100,
+        "signalStart": 0.1,
+        "signalEnd": 0.4,
+        "noiseStart": 0.5,
+        "noiseEnd": 0.6
+    },
+    "more2": {
+        "sampleRate": 44100,
+        "signalStart": 0.4,
+        "signalEnd": 0.8,
+        "noiseStart": 0,
+        "noiseEnd": 0.4
+    },
+    "more3": {
+        "sampleRate": 44100,
+        "signalStart": 0.4,
+        "signalEnd": 0.8,
+        "noiseStart": 0,
+        "noiseEnd": 0.4
+    },
+    "more4": {
+        "sampleRate": 44100,
+        "signalStart": 0.2,
+        "signalEnd": 0.7,
+        "noiseStart": 0,
+        "noiseEnd": 0.2
+    },
+    "more5": {
+        "sampleRate": 44100,
+        "signalStart": 0.4,
+        "signalEnd": 0.8,
+        "noiseStart": 0,
+        "noiseEnd": 0.3
+    },
+    "pork1": {
+        "sampleRate": 44100,
+        "signalStart": 0,
+        "signalEnd": 0.4,
+        "noiseStart": 0.4,
+        "noiseEnd": 0.8
+    },
+    "pork2": {
+        "sampleRate": 44100,
+        "signalStart": 0,
+        "signalEnd": 0.4,
+        "noiseStart": 0.4,
+        "noiseEnd": 0.8
+    },
+    "pork3": {
+        "sampleRate": 44100,
+        "signalStart": 0,
+        "signalEnd": 0.4,
+        "noiseStart": 0.4,
+        "noiseEnd": 0.8
+    },
+    "pork4": {
+        "sampleRate": 44100,
+        "signalStart": 0,
+        "signalEnd": 0.4,
+        "noiseStart": 0.4,
+        "noiseEnd": 0.8
+    },
+    "pork5": {
+        "sampleRate": 44100,
+        "signalStart": 0,
+        "signalEnd": 0.4,
+        "noiseStart": 0.4,
+        "noiseEnd": 0.8
+    },
+    "tril1": {
+        "sampleRate": 48000,
+        "signalStart": 0.4,
+        "signalEnd": 0.9,
+        "noiseStart": 0,
+        "noiseEnd": 0.3
+    },
+    "tril2": {
+        "sampleRate": 48000,
+        "signalStart": 0.4,
+        "signalEnd": 0.9,
+        "noiseStart": 0,
+        "noiseEnd": 0.3
+    },
+    "tril3": {
+        "sampleRate": 48000,
+        "signalStart": 0.1,
+        "signalEnd": 0.5,
+        "noiseStart": 0.6,
+        "noiseEnd": 1
+    },
+    "tril4": {
+        "sampleRate": 48000,
+        "signalStart": 0,
+        "signalEnd": 0.4,
+        "noiseStart": 0.5,
+        "noiseEnd": 1.2
+    },
+    "tril5": {
+        "sampleRate": 48000,
+        "signalStart": 0.6,
+        "signalEnd": 1.2,
+        "noiseStart": 0,
+        "noiseEnd": 0.5
+    }
+}

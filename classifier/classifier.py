@@ -14,6 +14,8 @@ tf.random.set_seed(1234)
 # Import dataset and convert to dataset object
 df = pd.read_csv('classifier/dataset.csv')
 
+print(df.filename)
+
 def get_dataset(df):
     filename_ds = tf.data.Dataset.from_tensor_slices(df.filename)
     label_ds = tf.data.Dataset.from_tensor_slices(df.label)
@@ -46,12 +48,13 @@ dataset.element_spec
 # Load Yamnet model (Transfer learning)
 yamnet_model = hub.load('https://tfhub.dev/google/yamnet/1')
 
-yamnet_model.save('./classifer/pretrained/')
+# yamnet_model.save('./classifer/pretrained/')
 
 def extract_embedding(audio, label):
   # Extract yamnet embedding 
   _, embeddings,_ = yamnet_model(audio)
   num_embeddings = tf.shape(embeddings)[0]
+  print(tf.repeat(label, num_embeddings))
   return (embeddings, tf.repeat(label, num_embeddings))
 
 dataset = dataset.map(extract_embedding).unbatch()
@@ -96,6 +99,8 @@ model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=Tru
 # Train model
 callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3, restore_best_weights=True)
 
+print(train)
+
 model.fit(train, validation_data=val, epochs=10, callbacks=callback)
 
 # Evaluate model
@@ -105,13 +110,10 @@ print("Accuracy: ", accuracy)
 
 
 
-
 # Test 
 audio,_ = loadAudio('possum16k.wav', 1)
 scores, embeddings, spectrogram = yamnet_model(audio)
 result = model(embeddings).numpy()
-
-print(result)
 
 inferred_class = list(classes.keys())[result.mean(axis=0).argmax()]
 print(f'The main sound is: {inferred_class}')

@@ -31,20 +31,20 @@ def PSNR(original, denoised): # WORKING
 
 
 def dataLoader(plot=False):
-    with open("dataset.json", "r") as dataset:
+    with open("Bird_dataset.json", "r") as dataset:
         data = json.load(dataset)
 
     for filename in data.keys():
         if filename:
             results = {}
-            original, sampleRate = librosa.load(f'./audio/{filename}.wav', sr=None)
-            denoised, sampleRate = librosa.load(f'./denoised_WPD/{filename}_denoised.wav', sr=None)
+            original, sampleRate = librosa.load(f'./audio/bird/{filename}.wav', sr=None)
+            denoised, sampleRate = librosa.load(f'./results/bird/denoised_WPD/{filename}_denoised.wav', sr=None)
             original = original[:len(denoised)] # Ensure signals are the same length
 
-            signalStart = data[filename]['signalStart'] * sampleRate
-            signalEnd = data[filename]['signalEnd'] * sampleRate
-            noiseStart = data[filename]['noiseStart'] * sampleRate
-            noiseEnd = data[filename]['noiseEnd'] * sampleRate
+            signalStart = int(data[filename]['signalStart'] * sampleRate)
+            signalEnd = int(data[filename]['signalEnd'] * sampleRate)
+            noiseStart = int(data[filename]['noiseStart'] * sampleRate)
+            noiseEnd = int(data[filename]['noiseEnd'] * sampleRate)
 
             SNR_db = SNR(original, denoised)
 
@@ -59,8 +59,8 @@ def dataLoader(plot=False):
                 # 'SNR_db': SNR_db,
                 'SnNR_original': SnNR_original,
                 'SnNR_denoised': SnNR_denoised,
-                # 'sr': sr,
-                # 'psnr': psnr
+                'sr': sr,
+                'psnr': psnr
             }
 
             if plot:
@@ -73,7 +73,9 @@ def dataLoader(plot=False):
                 plt.specgram(denoised, Fs=sampleRate)
                 plt.show()
 
-            print(f'Results: {results}')
+            # print(f'Results: {results}')
+            for call in results:
+                print(f"{results[call]['SnNR_denoised']},{results[call]['sr']},{results[call]['psnr']}")
 
     return results
 
