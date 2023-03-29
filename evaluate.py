@@ -14,8 +14,8 @@ def SnNR(original, sigRange, noiseRange):
     signal = original[sigRange[0]:sigRange[1]]
     noise = original[noiseRange[0]:noiseRange[1]]
 
-    print(signal)
-    print(noise)
+    # print(signal)
+    # print(noise)
 
     S = sum(signal**2)/len(signal)
     N = sum(noise**2)/len(noise)
@@ -41,7 +41,7 @@ def dataLoader(plot=False):
         if filename:
             results = {}
             original, sampleRate = librosa.load(f'./audio/predator/{filename}.wav', sr=None)
-            denoised, sampleRate = librosa.load(f'./results/predator/denoised_CMGAN/additive/{filename}.wav', sr=None)
+            denoised, sampleRate = librosa.load(f'./results/predator/denoised_CMGAN/spectral subtraction/{filename}.wav', sr=None)
             original = original[:len(denoised)] # Ensure signals are the same length
 
             signalStart = int(data[filename]['signalStart'] * sampleRate)
