@@ -13,13 +13,8 @@ def SNR(original, denoised):
 def SnNR(original, sigRange, noiseRange):
     signal = original[sigRange[0]:sigRange[1]]
     noise = original[noiseRange[0]:noiseRange[1]]
-
-    # print(signal)
-    # print(noise)
-
     S = sum(signal**2)/len(signal)
     N = sum(noise**2)/len(noise)
-
     return 10*math.log((S + N)/N)
 
 def success_ratio(original, denoised, noiseRange): # WORKING
@@ -40,45 +35,52 @@ def dataLoader(plot=False):
     for filename in data.keys():
         if filename:
             results = {}
-            original, sampleRate = librosa.load(f'./audio/predator/{filename}.wav', sr=None)
-            denoised, sampleRate = librosa.load(f'./results/predator/denoised_CMGAN/spectral subtraction/{filename}.wav', sr=None)
-            original = original[:len(denoised)] # Ensure signals are the same length
+            try:
+                original, sampleRate = librosa.load(f'./audio/predator/{filename}.wav', sr=None)
+                denoised, sampleRate = librosa.load(f'./results/predator/denoised_CMGAN/limited/{filename}.wav', sr=None)
+                original = original[:len(denoised)] # Ensure signals are the same length
 
-            signalStart = int(data[filename]['signalStart'] * sampleRate)
-            signalEnd = int(data[filename]['signalEnd'] * sampleRate)
-            noiseStart = int(data[filename]['noiseStart'] * sampleRate)
-            noiseEnd = int(data[filename]['noiseEnd'] * sampleRate)
+                # print(filename)
 
-            SNR_db = SNR(original, denoised)
+                signalStart = int(data[filename]['signalStart'] * sampleRate)
+                signalEnd = int(data[filename]['signalEnd'] * sampleRate)
+                noiseStart = int(data[filename]['noiseStart'] * sampleRate)
+                noiseEnd = int(data[filename]['noiseEnd'] * sampleRate)
 
-            # original
-            SnNR_original = SnNR(original, [signalStart,signalEnd], [noiseStart,noiseEnd])
-            SnNR_denoised = SnNR(denoised, [signalStart,signalEnd], [noiseStart,noiseEnd])
+                SNR_db = SNR(original, denoised)
 
-            sr = success_ratio(original, denoised, [noiseStart,noiseEnd]) # WORKING
-            psnr = PSNR(original, denoised) # WORKING
+                # original
+                SnNR_original = SnNR(original, [signalStart,signalEnd], [noiseStart,noiseEnd])
+                SnNR_denoised = SnNR(denoised, [signalStart,signalEnd], [noiseStart,noiseEnd])
 
-            results[filename] = {
-                # 'SNR_db': SNR_db,
-                'SnNR_original': SnNR_original,
-                'SnNR_denoised': SnNR_denoised,
-                'sr': sr,
-                'psnr': psnr
-            }
+                sr = success_ratio(original, denoised, [noiseStart,noiseEnd]) # WORKING
+                psnr = PSNR(original, denoised) # WORKING
 
-            if plot:
-                plt.figure(1)
-                plt.title('Original')
-                plt.specgram(original, Fs=sampleRate)
+                results[filename] = {
+                    # 'SNR_db': SNR_db,
+                    'SnNR_original': SnNR_original,
+                    'SnNR_denoised': SnNR_denoised,
+                    'sr': sr,
+                    'psnr': psnr
+                }
 
-                plt.figure(2)
-                plt.title('denoised')
-                plt.specgram(denoised, Fs=sampleRate)
-                plt.show()
+                if plot:
+                    plt.figure(1)
+                    plt.title('Original')
+                    plt.specgram(original, Fs=sampleRate)
 
-            # print(f'Results: {results}')
-            for call in results:
-                print(f"{results[call]['SnNR_denoised']},{results[call]['sr']},{results[call]['psnr']}")
+                    plt.figure(2)
+                    plt.title('denoised')
+                    plt.specgram(denoised, Fs=sampleRate)
+                    plt.show()
+
+                # print(f'Results: {results}')
+                for call in results:
+                #     # print(f"{results[call]['SnNR_original']}")
+                    print(f"{results[call]['SnNR_denoised']},{results[call]['sr']},{results[call]['psnr']}")
+
+            except:
+                print(f'Could not find {filename}.wav')
 
     return results
 

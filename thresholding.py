@@ -6,14 +6,8 @@ from scipy.stats import entropy, kstest, uniform
 import matplotlib.pyplot as plt
 import time
 import librosa
-from spectral_noise_grating import plot_spectrogram, convertToAmp, spectrogram, autoThreshold, reconstruct, ISTFT, mask
-
-# def entropy(data):
-#     # Calculate the entropy given packet coefficients
-#     # print(data)
-#     norm = np.linalg.norm(data)
-#     e = data[np.nonzero(norm)]**2 * np.log2(data[np.nonzero(norm)]**2)
-#     return -np.sum(e)
+# from spectral_noise_grating import plot_spectrogram, convertToAmp, spectrogram, autoThreshold, reconstruct, ISTFT, mask
+import os
 
 def KS(data):
     # Kolmogororov-Smirnov test of uniformity
@@ -21,24 +15,24 @@ def KS(data):
     return Uniformity.statistic
 
 
-def decomposition(signal, level):
-    # Plot decomposition packets
-    fig, axarr = plt.subplots(nrows=level, ncols=2, figsize=(6,6))
+# def decomposition(signal, level):
+#     # Plot decomposition packets
+#     fig, axarr = plt.subplots(nrows=level, ncols=2, figsize=(6,6))
 
-    A = signal
+#     A = signal
 
-    for ii in range(level):
-        (A,D) = pywt.dwt(A, 'dmey')
-        axarr[ii, 0].plot(A, 'r')
-        axarr[ii, 1].plot(D, 'g')
-        axarr[ii, 0].set_ylabel("Level {}".format(ii + 1), fontsize=14, rotation=90)
+#     for ii in range(level):
+#         (A,D) = pywt.dwt(A, 'dmey')
+#         axarr[ii, 0].plot(A, 'r')
+#         axarr[ii, 1].plot(D, 'g')
+#         axarr[ii, 0].set_ylabel("Level {}".format(ii + 1), fontsize=14, rotation=90)
 
-        if ii == 0:
-            axarr[ii, 0].set_title("Approximation coefficients", fontsize=14)
-            axarr[ii, 1].set_title("Detail coefficients", fontsize=14)
+#         if ii == 0:
+#             axarr[ii, 0].set_title("Approximation coefficients", fontsize=14)
+#             axarr[ii, 1].set_title("Detail coefficients", fontsize=14)
 
-    plt.tight_layout()
-    plt.show()
+#     plt.tight_layout()
+#     plt.show()
 
 
 def partialTree(signal, levels=5, plot=False):
@@ -49,7 +43,7 @@ def partialTree(signal, levels=5, plot=False):
         fig, ax = plt.subplots(len(coeffs))
         for i, coeff in enumerate(coeffs):
             ax[i].plot(coeff)
-        plt.show()
+        # plt.show()
 
     return coeffs
 
@@ -71,7 +65,7 @@ def decomposeFull(signal, wavelet='dmey', levels=5, plot=False):
         fig, ax = plt.subplots(len(coeffs))
         for i, coeff in enumerate(coeffs):
             ax[i].plot(coeff)
-        plt.show()
+        # plt.show()
 
     return coeffs
 
@@ -92,7 +86,7 @@ def reconstructFull(coeffs, wavelet='dmey', plot=False):
         fig, ax = plt.subplots(len(coeffs))
         for i, coeff in enumerate(coeffs):
             ax[i].plot(coeff)
-        plt.show()
+        # plt.show()
 
     return coeffs[0]
 
@@ -163,57 +157,37 @@ def universalThresholding(coeffs):
     return v * np.sqrt(2*np.log(N))
 
 
-# # Chirp (Test signal)
-# sampleRate = 1000
-# t = np.linspace(0, 10, sampleRate)
-# signal = chirp(t, f0=0.1, f1=2, t1=10, method='linear')
-# noise = np.random.standard_normal(sampleRate) * 0.1
-# signal += noise
-# wavelet = 'dmey'
-# level = pywt.dwt_max_level(len(signal), wavelet) # Calculate the maximum level
-# form = signal.dtype
+def WPD(signal, sr, plot=False):
+    # Noisy possum Test
+    
+    form = signal.dtype
+    wavelet = 'dmey'
 
+    level = pywt.dwt_max_level(len(signal), wavelet) # Calculate the maximum level
+    level = 5
 
-# Noisy possum Test
-signal, sampleRate = librosa.load('./recordings/downsampled/possum16k.wav', sr=None)
-form = signal.dtype
-wavelet = 'dmey'
+    thres = findThres(signal, level)
+    denoised = thresholdPartial(signal, thres, wavelet=wavelet, level=level)
 
-level = pywt.dwt_max_level(len(signal), wavelet) # Calculate the maximum level
-level = 2
+    # if plot:
+    #     plt.figure()
+    #     plt.title('Original/Denoised signal')
+    #     plt.plot(signal)
+    #     plt.plot(denoised)
+    #     plt.show()
 
-# Normalisation
-# signal = (signal - np.mean(signal)) / np.std(signal) # Normalisation
-# signal = np.divide(signal, sum(signal)) # Generate random variable that add to 1.0
+    #     fig, (ax1, ax2) = plt.subplots(2)
+    #     fig.suptitle('Original/Denoised Spectrogram')
+    #     ax1.specgram(signal, Fs=sr)
+    #     ax2.specgram(denoised, Fs=sr)
+    #     plt.show()
 
-# print(pywt.wavelist(kind='discrete'))
+PATH = './efficiency/'
+for _,_,filenames in os.walk(PATH):
+    for filename in sorted(filenames):
+        signal, sr = librosa.load(f'{PATH}{filename}', sr=None)
 
-print(f"Max level: {level}")
-
-thres = findThres(signal, level)
-# thres = universalThresholding(signal)
-
-# decomposition(signal, level)
-
-
-# denoised = thresholdFull(signal, thres, wavelet=wavelet, levels=level)
-denoised = thresholdPartial(signal, thres, wavelet=wavelet, level=level)
-
-# plot_spectrogram(denoised,title="Denoised")
-
-plt.figure()
-plt.title('Original/Denoised signal')
-plt.plot(signal)
-plt.plot(denoised)
-plt.show()
-
-fig, (ax1, ax2) = plt.subplots(2)
-fig.suptitle('Original/Denoised Spectrogram')
-ax1.specgram(signal, Fs=sampleRate)
-# denoised = np.asarray(denoised, dtype=form) # Downsample
-ax2.specgram(denoised, Fs=sampleRate)
-
-plt.show()
-
-# # Save denoised signal
-# wave.write('denoised/denoised.wav', sampleRate, denoised)
+        start = time.time()
+        denoised = WPD(signal, sr)
+        end = time.time()
+        print(end-start)
