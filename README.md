@@ -1,36 +1,28 @@
-# Annotator
+# Automatic Noise Reduction of Extremely Sparse Vocalisations for Bioacoustic Monitoring
 
-## Description
-Annotation tool to recommend regions of recordings likely to contain target audio events
-This method uses wavelet Packet Decomposition for noise reduction and compares to reference packets
-
+## Abstract
+Environmental noise and data sparsity present major challenges within the field of bioacoustics. This paper explores noise reduction (audio enhancement) techniques in the context of extremely sparse vocalisations (<1% occurrence rates) of invasive mammalian and marsupial species and the clear implications for other bioacoustics applications which face similar challenges. We compare relevant noise reduction techniques and recommend a spectral subtraction approach that outperforms alternative approaches in terms of stationary noise reduction, efficiency, and data requirements. We identify how the contributions of this work can be applied within the broader context of bioacoustics. We also explore the current benefits and limitations of state-of-the-art deep audio enhancement approaches within the context of bioacoustics applications.
 
 ## Installation
 ```pip install -r requirements.txt```
 
+## Description
+Repository accompanying paper (*Automatic Noise Reduction of Extremely Sparse Vocalisations for Bioacoustic Monitoring*). Includes the New Zealand (NZ) Invasive Predator test dataset `/audio/predator`. Find NZ Native Bird dataset at: https://github.com/smarsland/AviaNZ or `/audio/bird`
 
-## Things to do
-Pre-processing
-- [x] Run initial checks: sampling rate = 16kHz, monochannel, normalised (maybe)
+### Results
+Full results (.wav) can be found at `/results`, this includes Wavelet Packet Decomposition (WPD), spectral subtraction, CMGAN (spectral) and CMGAN (additive) for both datasets.
 
-Classification
-- [ ] Deep Learing Pipeline (Segmentation -> classifier)
-- [ ] Transfer learning (Yamnet)
-- [ ] Data augmentation of training set
+### Evaluation
+SnNR, Success Ratio (SR) and PSNR metric can be generated using `evaluate.py`. Select results to evaluate from `/results` and the corresponding dataset (.json), either `Bird_dataset.json` or `Predator_dataset.json`
 
+### Feature Spacing
+Find feature spacing test audio at `/feature_spacing`. This is evaluated using `manual_evaluation.py`
 
-## Complete
-- [x] Comparison between recording spectrograms and reference packets
-  
-- [x] Correlation between multiple reference recordings
-  - [x] Store references as .npy arrays so they dont need to be converted each time
-- [x] Standardise shape of recommendations - Can be improved further
-- [x] Rank recommendations in order of highest correlation
-- [x] Bug fix: case where there is an od number of time stamps
+## Citation
+Coming soon
 
-- [x] Generate more masks (unique call types and noise)
-- [x] Integrate with wavelet denoising 
-- [x] convert samples to timestamp to segment real time-domain signal
-- [x] Check for overlapping recommendation and combine
-  - [x] Combine similar time stamps
-  - [x] Combine call and correlation labels relating to time stamp
+## Acknowledgements
+This research was made possible through Capability Development funding through Predator Free 2050 Limited (https://pf2050.co.nz/).
+AviaNZ (https://github.com/smarsland/AviaNZ) for use of their WPD method and NZ native bird dataset.
+Tim Sainbury (https://github.com/timsainb/noisereduce) for use of the noisereduce package (spectral subtraction)
+Cao et al. (https://github.com/ruizhecao96/CMGAN) for access to CMGAN.
