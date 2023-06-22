@@ -29,6 +29,11 @@ def PSNR(original, denoised): # WORKING
 
 
 def dataLoader(plot=False):
+
+    snnr_array = []
+    sr_array = []
+    psnr_array = []
+
     with open("Predator_dataset.json", "r") as dataset:
         data = json.load(dataset)
 
@@ -36,8 +41,8 @@ def dataLoader(plot=False):
         if filename:
             results = {}
             try:
-                original, sampleRate = librosa.load(f'./audio/predator/{filename}.wav', sr=None)
-                denoised, sampleRate = librosa.load(f'./results/predator/denoised_CMGAN/limited/{filename}.wav', sr=None)
+                original, sampleRate = librosa.load(f'./rms/rms5/original/{filename}.wav', sr=None)
+                denoised, sampleRate = librosa.load(f'./rms/rms5/denoised/{filename}.wav', sr=None)
                 original = original[:len(denoised)] # Ensure signals are the same length
 
                 # print(filename)
@@ -55,6 +60,10 @@ def dataLoader(plot=False):
 
                 sr = success_ratio(original, denoised, [noiseStart,noiseEnd]) # WORKING
                 psnr = PSNR(original, denoised) # WORKING
+
+                snnr_array.append(SnNR_denoised)
+                sr_array.append(sr)
+                psnr_array.append(psnr)
 
                 results[filename] = {
                     # 'SNR_db': SNR_db,
@@ -81,6 +90,10 @@ def dataLoader(plot=False):
 
             except:
                 print(f'Could not find {filename}.wav')
+
+    print(np.mean(snnr_array))
+    print(np.mean(sr_array))
+    print(np.mean(psnr_array))
 
     return results
 
