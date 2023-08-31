@@ -19,7 +19,18 @@ SnNR, Success Ratio (SR) and PSNR metric can be generated using `evaluate.py`. S
 Find feature spacing test audio at `/feature_spacing`. This is evaluated using `manual_evaluation.py`
 
 ## Citation
-Coming soon
+```
+@article{McEwen2023,
+  title = {Automatic noise reduction of extremely sparse vocalisations for bioacoustic monitoring},
+  journal = {Ecological Informatics},
+  pages = {102280},
+  year = {2023},
+  issn = {1574-9541},
+  doi = {https://doi.org/10.1016/j.ecoinf.2023.102280},
+  author = {Ben McEwen and Kaspar Soltero and Stefanie Gutschmidt and Andrew Bainbridge-Smith and James Atlas and Richard Green},
+  keywords = {Audio enhancement, Bioacoustics, Noise reduction, Perceptual quality, Signal processing},
+}
+```
 
 ## Acknowledgements
 This research was made possible through Capability Development funding through Predator Free 2050 Limited (https://pf2050.co.nz/).
